@@ -80,6 +80,11 @@ npm test --workspace mobile
 Chaque user story livrée est couverte par des tests côté web et mobile (voir `backlog.md` pour
 le détail par story).
 
+## Licence
+
+Tous droits réservés — voir [`LICENSE`](./LICENSE). Ce code n'est pas open source : aucune
+réutilisation, copie ou distribution n'est autorisée sans permission écrite du titulaire des droits.
+
 ## Notes importantes
 
 - Le backend Laravel n'est **pas** inclus dans ce dépôt : les appels API des packages `@app/*-core`
