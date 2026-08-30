@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { estSessionTerminee, useHistorique, type HistoriqueRole } from '@app/historique-core';
+import { estReservationAnnulable, estSessionTerminee, useHistorique, type HistoriqueRole } from '@app/historique-core';
+import { useAnnulerReservation } from '@app/reservation-core';
 import { webSessionStorage } from '../../authentification/sessionStorage';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -36,6 +37,23 @@ export function HistoriqueList({ role }: { role: HistoriqueRole }) {
   }, []);
 
   const { reservations, loading, error } = useHistorique({ role, apiBaseUrl: API_BASE_URL, token: token ?? null });
+  const { annulingId, annulerError, annuler } = useAnnulerReservation({
+    apiBaseUrl: API_BASE_URL,
+    token: token ?? null,
+  });
+
+  // Mise à jour locale après annulation plutôt qu'un re-fetch complet de l'historique — même
+  // approche que la mise à jour optimiste du "marquer comme lue" des notifications (US-20).
+  const [statutOverrides, setStatutOverrides] = useState<Record<string, string>>({});
+  const [messagesAnnulation, setMessagesAnnulation] = useState<Record<string, string>>({});
+
+  const handleAnnuler = async (reservationId: string) => {
+    const resultat = await annuler(reservationId);
+    if (resultat) {
+      setStatutOverrides((prev) => ({ ...prev, [reservationId]: 'annulee' }));
+      setMessagesAnnulation((prev) => ({ ...prev, [reservationId]: resultat.message }));
+    }
+  };
 
   if (token === undefined || loading) {
     return <p>Chargement de ton historique…</p>;
@@ -56,30 +74,51 @@ export function HistoriqueList({ role }: { role: HistoriqueRole }) {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">{TITRES[role]}</h1>
+      {annulerError && (
+        <p role="alert" className="text-sm text-red-600">
+          {annulerError}
+        </p>
+      )}
       <ul className="flex flex-col gap-2">
-        {reservations.map((reservation) => (
-          <li key={reservation.id} className="rounded border border-gray-200 px-3 py-2 text-sm">
-            <p className="font-medium">
-              {reservation.terrain.adresse} — {reservation.terrain.sport}
-            </p>
-            <p>
-              {reservation.creneau.debut.replace('T', ' ')} → {reservation.creneau.fin.replace('T', ' ')} —{' '}
-              {reservation.montant}
-            </p>
-            <p className="text-gray-600">
-              {AUTRE_PARTIE_LABELS[role]} : {reservation.autrePartie.nom} —{' '}
-              {STATUT_LABELS[reservation.statut] ?? reservation.statut}
-            </p>
-            {estSessionTerminee(reservation) && (
-              <Link
-                href={`/reservations/${reservation.id}/noter/${reservation.autrePartie.id}`}
-                className="text-blue-600 underline"
-              >
-                Noter cette session
-              </Link>
-            )}
-          </li>
-        ))}
+        {reservations.map((reservation) => {
+          const statut = statutOverrides[reservation.id] ?? reservation.statut;
+          const effective = { ...reservation, statut };
+          return (
+            <li key={reservation.id} className="rounded border border-gray-200 px-3 py-2 text-sm">
+              <p className="font-medium">
+                {reservation.terrain.adresse} — {reservation.terrain.sport}
+              </p>
+              <p>
+                {reservation.creneau.debut.replace('T', ' ')} → {reservation.creneau.fin.replace('T', ' ')} —{' '}
+                {reservation.montant}
+              </p>
+              <p className="text-gray-600">
+                {AUTRE_PARTIE_LABELS[role]} : {reservation.autrePartie.nom} — {STATUT_LABELS[statut] ?? statut}
+              </p>
+              {estSessionTerminee(effective) && (
+                <Link
+                  href={`/reservations/${reservation.id}/noter/${reservation.autrePartie.id}`}
+                  className="text-blue-600 underline"
+                >
+                  Noter cette session
+                </Link>
+              )}
+              {role === 'joueur' && estReservationAnnulable(effective) && (
+                <button
+                  type="button"
+                  onClick={() => void handleAnnuler(reservation.id)}
+                  disabled={annulingId === reservation.id}
+                  className="mt-1 block text-red-600 underline disabled:opacity-50"
+                >
+                  {annulingId === reservation.id ? 'Annulation en cours…' : 'Annuler ma réservation'}
+                </button>
+              )}
+              {messagesAnnulation[reservation.id] && (
+                <p className="text-green-700">{messagesAnnulation[reservation.id]}</p>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

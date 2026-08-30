@@ -12,6 +12,15 @@ import type { Equipement, Sport } from '@app/shared';
  * proximité — les deux peuvent d'ailleurs être fournis ensemble (chercher "Dakar" et trier le
  * résultat par distance depuis sa position réelle).
  */
+/**
+ * `prixMax`/`distanceMaxKm`/`equipements` sont l'ajout US-23 / RF-022. Aucun n'exige de
+ * modification d'architecture.md : `prixMax` filtre sur `CRENEAU.tarif` (déjà modélisé),
+ * `equipements` filtre sur `TERRAIN.equipements` (déjà modélisé, US-04), et `distanceMaxKm` est
+ * une simple borne sur la distance déjà calculée côté backend pour `distanceKm` (US-09) — dans
+ * les trois cas, filtrer une donnée déjà stockée n'ajoute rien au modèle de données, contrairement
+ * aux écarts corrigés pour US-03/US-15/US-20/US-21 où la donnée elle-même n'avait nulle part où
+ * être stockée.
+ */
 export interface RechercheFiltres {
   sport?: Sport;
   localisation?: string;
@@ -21,6 +30,12 @@ export interface RechercheFiltres {
   heure?: string;
   latitude?: number;
   longitude?: number;
+  /** Tarif maximum accepté (même unité que `RechercheResultat.tarif`). */
+  prixMax?: number;
+  /** Distance maximum en km — n'a de sens qu'accompagné d'une position (`latitude`/`longitude`, US-09) ; ignoré sinon. */
+  distanceMaxKm?: number;
+  /** Ne garder que les terrains possédant TOUS les équipements sélectionnés. */
+  equipements?: Equipement[];
 }
 
 /**
@@ -42,6 +57,8 @@ export interface RechercheResultat {
   tarif: number;
   /** Distance depuis la position fournie (US-09) — calculée côté backend via PostGIS, `undefined` si aucune position n'a été envoyée. */
   distanceKm?: number;
+  /** US-23 : équipements du terrain — projetés depuis `TERRAIN.equipements` (déjà présent dans TerrainDetail depuis US-08) pour que le résultat de recherche montre pourquoi il correspond à un filtre équipements. */
+  equipements: Equipement[];
 }
 
 export interface TerrainDetailCreneau {

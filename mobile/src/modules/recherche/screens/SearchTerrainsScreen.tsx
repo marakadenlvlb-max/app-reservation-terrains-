@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useRechercheTerrains, type RechercheResultat } from '@app/recherche-core';
-import { SPORT_OPTIONS } from '@app/shared';
+import { EQUIPEMENT_OPTIONS, SPORT_OPTIONS } from '@app/shared';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
@@ -18,6 +18,9 @@ export function SearchTerrainsScreen() {
     date,
     heure,
     position,
+    prixMax,
+    distanceMaxKm,
+    equipements,
     resultats,
     hasSearched,
     searching,
@@ -27,6 +30,9 @@ export function SearchTerrainsScreen() {
     setDate,
     setHeure,
     setPosition,
+    setPrixMax,
+    setDistanceMaxKm,
+    toggleEquipement,
     search,
   } = useRechercheTerrains({ apiBaseUrl: API_BASE_URL });
 
@@ -125,6 +131,58 @@ export function SearchTerrainsScreen() {
         </View>
       </View>
 
+      <View className="flex-row gap-4">
+        <View className="flex-1 gap-1">
+          <Text className="text-sm font-medium">Prix max</Text>
+          <TextInput
+            accessibilityLabel="Prix max"
+            value={prixMax}
+            onChangeText={setPrixMax}
+            keyboardType="numeric"
+            placeholder="ex. 20000"
+            className="rounded border border-gray-300 px-3 py-2"
+          />
+        </View>
+        <View className="flex-1 gap-1">
+          <Text className="text-sm font-medium">Distance max (km)</Text>
+          <TextInput
+            accessibilityLabel="Distance max (km)"
+            value={distanceMaxKm}
+            onChangeText={setDistanceMaxKm}
+            keyboardType="numeric"
+            editable={!!position}
+            placeholder={position ? 'ex. 5' : 'Active ta position'}
+            className={`rounded border border-gray-300 px-3 py-2 ${!position ? 'opacity-50' : ''}`}
+          />
+        </View>
+      </View>
+      {!position && (
+        <Text className="text-xs text-gray-500">
+          Le filtre de distance n'est utilisable qu'une fois ta position prise en compte.
+        </Text>
+      )}
+
+      <View className="gap-1">
+        <Text className="text-sm font-medium">Équipements</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {EQUIPEMENT_OPTIONS.map((option) => {
+            const selected = equipements.includes(option.value);
+            return (
+              <Pressable
+                key={option.value}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={option.label}
+                onPress={() => toggleEquipement(option.value)}
+                className={`rounded border px-3 py-1 ${selected ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}
+              >
+                <Text>{option.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Trier par proximité"
@@ -173,6 +231,13 @@ export function SearchTerrainsScreen() {
                   {item.debut} → {item.fin} — {item.tarif}
                   {item.distanceKm !== undefined ? ` — à ${item.distanceKm.toFixed(1)} km` : ''}
                 </Text>
+                {item.equipements.length > 0 && (
+                  <Text className="text-xs text-gray-500">
+                    {item.equipements
+                      .map((e) => EQUIPEMENT_OPTIONS.find((option) => option.value === e)?.label ?? e)
+                      .join(', ')}
+                  </Text>
+                )}
                 {/* TODO: navigation vers l'écran de détail (US-08) une fois un routeur choisi. */}
               </View>
             )}

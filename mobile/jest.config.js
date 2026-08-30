@@ -7,6 +7,7 @@ module.exports = {
     '^@app/annonces-core$': '<rootDir>/../packages/annonces-core/src/index.ts',
     '^@app/historique-core$': '<rootDir>/../packages/historique-core/src/index.ts',
     '^@app/notation-core$': '<rootDir>/../packages/notation-core/src/index.ts',
+    '^@app/notification-core$': '<rootDir>/../packages/notification-core/src/index.ts',
     '^@app/paiement-core$': '<rootDir>/../packages/paiement-core/src/index.ts',
     '^@app/recherche-core$': '<rootDir>/../packages/recherche-core/src/index.ts',
     '^@app/reservation-core$': '<rootDir>/../packages/reservation-core/src/index.ts',

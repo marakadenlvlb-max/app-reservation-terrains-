@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { HistoriqueScreen } from './HistoriqueScreen';
 
 const mockSecureStore = new Map<string, string>();
@@ -74,5 +74,42 @@ describe('HistoriqueScreen', () => {
     render(<HistoriqueScreen role="joueur" />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
+  });
+
+  it('propose "Annuler ma réservation" uniquement côté joueur pour une réservation confirmée à venir', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] })
+    ) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    expect(screen.getAllByLabelText(/annuler ma réservation/i)).toHaveLength(1);
+  });
+
+  it("ne propose pas l'annulation côté propriétaire (RF-021 réservée au joueur)", async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="proprietaire" />);
+
+    await screen.findByText(/awa diallo/i);
+    expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull();
+  });
+
+  it('annule une réservation et affiche le message renvoyé par le backend (US-22 / RF-021)', async () => {
+    global.fetch = jest.fn((url: string, options?: RequestInit) => {
+      if (options?.method === 'POST' && typeof url === 'string' && url.includes('/annulation')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ rembourse: true, message: 'Remboursement en cours via Wave sous 48h.' }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
+    }) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+
+    expect(await screen.findByText(/remboursement en cours via wave/i)).toBeTruthy();
+    await waitFor(() => expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull());
   });
 });

@@ -7,6 +7,7 @@ const nextConfig = {
     '@app/annonces-core',
     '@app/historique-core',
     '@app/notation-core',
+    '@app/notification-core',
     '@app/paiement-core',
     '@app/recherche-core',
     '@app/reservation-core',

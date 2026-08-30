@@ -1,4 +1,4 @@
-import type { Reservation } from './types';
+import type { AnnulationReponse, Reservation } from './types';
 
 /**
  * Appel à l'API backend (Laravel, module Réservation — architecture.md section 2) pour
@@ -44,6 +44,30 @@ export async function fetchReservation(
 
   if (!response.ok) {
     throw new Error('Impossible de vérifier le statut de la réservation.');
+  }
+
+  return response.json();
+}
+
+/**
+ * US-22 / RF-021 : demande l'annulation d'une réservation. Le backend décide seul si le délai de
+ * la politique d'annulation est respecté (voir le commentaire sur `AnnulationReponse` dans
+ * types.ts) et déclenche le remboursement en conséquence — le frontend relaie simplement le
+ * résultat. TODO: endpoint backend à confirmer/implémenter côté Laravel.
+ */
+export async function annulerReservation(
+  reservationId: string,
+  apiBaseUrl: string,
+  token: string
+): Promise<AnnulationReponse> {
+  const response = await fetch(`${apiBaseUrl}/api/reservations/${reservationId}/annulation`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? "L'annulation a échoué. Réessaie plus tard.");
   }
 
   return response.json();

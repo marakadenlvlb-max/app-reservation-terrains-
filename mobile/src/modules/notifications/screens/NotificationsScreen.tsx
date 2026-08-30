@@ -1,0 +1,94 @@
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { useNotifications, type Notification } from '@app/notification-core';
+import { mobileSessionStorage } from '../../authentification/sessionStorage';
+import { usePushRegistration } from '../hooks/usePushRegistration';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
+
+const TYPE_LABELS: Record<string, string> = {
+  confirmation_reservation: 'Réservation confirmée',
+  rappel_creneau: 'Rappel de créneau',
+};
+
+/**
+ * Journal des notifications — US-20/US-21, module Notifications (RF-020). Équivalent mobile de
+ * NotificationsList (web), même hook partagé (useNotifications) ; câble en plus
+ * usePushRegistration pour que l'appareil puisse recevoir les prochains pushes (voir ses TODOs
+ * pour la limite actuelle : enregistrement déclenché en visitant cet écran, pas globalement à la
+ * connexion, faute de routeur applicatif en place).
+ */
+export function NotificationsScreen() {
+  const [token, setToken] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    mobileSessionStorage.getToken().then(setToken);
+  }, []);
+
+  const { notifications, loading, error, markingId, markAsRead } = useNotifications({
+    apiBaseUrl: API_BASE_URL,
+    token: token ?? null,
+  });
+
+  usePushRegistration({ apiBaseUrl: API_BASE_URL, token: token ?? null });
+
+  if (token === undefined || loading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (error && notifications.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-6">
+        <Text accessibilityRole="alert" className="text-sm text-red-600">
+          {error}
+        </Text>
+      </View>
+    );
+  }
+
+  if (notifications.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-6">
+        <Text className="text-sm text-gray-500">Aucune notification pour l'instant.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 px-6 pt-16">
+      <Text className="mb-4 text-xl font-semibold">Mes notifications</Text>
+      <FlatList
+        data={notifications}
+        keyExtractor={(item: Notification) => item.id}
+        renderItem={({ item }) => (
+          <View
+            className={`mb-2 rounded border px-3 py-2 ${
+              item.lue ? 'border-gray-200' : 'border-blue-400 bg-blue-50'
+            }`}
+          >
+            <Text className="font-medium">{TYPE_LABELS[item.type] ?? item.titre}</Text>
+            <Text className="text-gray-700">{item.message}</Text>
+            <Text className="text-xs text-gray-500">{item.createdAt}</Text>
+            {!item.lue && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Marquer comme lue : ${item.titre}`}
+                onPress={() => void markAsRead(item.id)}
+                disabled={markingId === item.id}
+                className="mt-1 self-start"
+              >
+                <Text className="text-xs text-blue-600">
+                  {markingId === item.id ? 'Marquage…' : 'Marquer comme lue'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      />
+    </View>
+  );
+}

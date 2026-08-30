@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { HistoriqueList } from './HistoriqueList';
 
 const RESERVATION_A_VENIR = {
@@ -66,5 +67,47 @@ describe('HistoriqueList', () => {
     render(<HistoriqueList role="joueur" />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/connecte-toi/i);
+  });
+
+  it('propose "Annuler ma réservation" uniquement côté joueur pour une réservation confirmée à venir', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] }))
+    );
+    render(<HistoriqueList role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    // La réservation passée est terminée : plus rien à annuler, seule l'à-venir est proposée.
+    expect(screen.getAllByRole('button', { name: /annuler ma réservation/i })).toHaveLength(1);
+  });
+
+  it("ne propose pas l'annulation côté propriétaire (RF-021 réservée au joueur)", async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })));
+    render(<HistoriqueList role="proprietaire" />);
+
+    await screen.findByText(/awa diallo/i);
+    expect(screen.queryByRole('button', { name: /annuler ma réservation/i })).not.toBeInTheDocument();
+  });
+
+  it('annule une réservation et affiche le message renvoyé par le backend (US-22 / RF-021)', async () => {
+    vi.stubGlobal('fetch', (url: string, options?: RequestInit) => {
+      if (options?.method === 'POST' && typeof url === 'string' && url.includes('/annulation')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ rembourse: true, message: 'Remboursement en cours via Wave sous 48h.' }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
+    });
+    const user = userEvent.setup();
+    render(<HistoriqueList role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    await user.click(screen.getByRole('button', { name: /annuler ma réservation/i }));
+
+    expect(await screen.findByText(/remboursement en cours via wave/i)).toBeInTheDocument();
+    // Le statut affiché reflète l'annulation sans re-fetch, et le bouton disparaît une fois annulée.
+    expect(await screen.findByText(/annulée/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /annuler ma réservation/i })).not.toBeInTheDocument();
   });
 });

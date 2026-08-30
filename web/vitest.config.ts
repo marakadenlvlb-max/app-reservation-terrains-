@@ -12,6 +12,7 @@ export default defineConfig({
       '@app/annonces-core': path.resolve(__dirname, '../packages/annonces-core/src/index.ts'),
       '@app/historique-core': path.resolve(__dirname, '../packages/historique-core/src/index.ts'),
       '@app/notation-core': path.resolve(__dirname, '../packages/notation-core/src/index.ts'),
+      '@app/notification-core': path.resolve(__dirname, '../packages/notification-core/src/index.ts'),
       '@app/paiement-core': path.resolve(__dirname, '../packages/paiement-core/src/index.ts'),
       '@app/recherche-core': path.resolve(__dirname, '../packages/recherche-core/src/index.ts'),
       '@app/reservation-core': path.resolve(__dirname, '../packages/reservation-core/src/index.ts'),

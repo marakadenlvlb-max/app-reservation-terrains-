@@ -116,6 +116,8 @@ erDiagram
     CRENEAU ||--o| RESERVATION : occupe
     RESERVATION ||--|| PAIEMENT : genere
     RESERVATION ||--o{ NOTATION : declenche
+    UTILISATEUR ||--o{ NOTIFICATION : recoit
+    RESERVATION ||--o{ NOTIFICATION : declenche
 
     UTILISATEUR {
         uuid id
@@ -125,6 +127,7 @@ erDiagram
         string ville
         string photo_url
         json sports_pratiques
+        json push_tokens
         decimal note_moyenne
         datetime created_at
     }
@@ -177,6 +180,16 @@ erDiagram
         string commentaire
         datetime created_at
     }
+    NOTIFICATION {
+        uuid id
+        uuid destinataire_id
+        uuid reservation_id
+        string type
+        string titre
+        string message
+        boolean lue
+        datetime created_at
+    }
 ```
 
 > **Correction du 29 août 2026** : `sports_pratiques` (liste parmi foot/tennis/basket) a été
@@ -205,6 +218,16 @@ erDiagram
 > seul versement) — plus simple, et suffisant tant qu'aucune exigence n'impose un lot de
 > reversement groupé. À revisiter si le cycle de reversement réel groupe plusieurs paiements en
 > un seul virement bancaire au propriétaire.
+
+> **Correction du 30 août 2026** : ajout de l'entité NOTIFICATION (destinataire_id,
+> reservation_id, type, titre, message, lue, created_at) et du champ
+> `UTILISATEUR.push_tokens` (JSON — un utilisateur peut avoir plusieurs appareils). Le modèle de
+> données initial ne prévoyait aucune façon de représenter "une notification a été envoyée à cet
+> utilisateur, en voici le contenu et le statut de lecture" — écart repéré en préparant US-20/
+> US-21 (module Notifications, RF-020), qui a besoin d'un historique consultable en plus de
+> l'envoi push/email/SMS lui-même. `push_tokens` suit le même pattern que `sports_pratiques`
+> (JSON plutôt qu'entité séparée, cohérent avec `TERRAIN.equipements`) : la liste des jetons
+> d'appareils d'un utilisateur n'a pas besoin d'être une table à part pour l'instant.
 
 ## 4. Choix d'intégration
 
@@ -237,5 +260,6 @@ La couche Paiement expose une interface commune ("adaptateur de paiement") derri
 | Entités Utilisateur / Terrain / Créneau / Réservation / Paiement / Notation | RF-001 à RF-019 (support de données) |
 | Champ UTILISATEUR.sports_pratiques *(ajouté le 29 août 2026)* | RF-001, RF-003 |
 | Champs PAIEMENT.commission/montant_net/statut_reversement/date_reversement *(ajoutés le 30 août 2026)* | RF-015 |
+| Entité NOTIFICATION + champ UTILISATEUR.push_tokens *(ajoutés le 30 août 2026)* | RF-020 |
 | Intégration géolocalisation | RF-007 |
 | Intégration notifications | RF-020 |

@@ -19,6 +19,7 @@ const RESULTAT = {
   fin: '2026-09-01T19:00',
   tarif: 15000,
   distanceKm: undefined as number | undefined,
+  equipements: [] as ('vestiaires' | 'eclairage' | 'surface')[],
 };
 
 function createFetchMock(overrides: { results?: typeof RESULTAT[]; ok?: boolean } = {}) {
@@ -94,5 +95,51 @@ describe('SearchTerrainsScreen', () => {
     fireEvent.press(screen.getByLabelText('Rechercher'));
 
     expect(await screen.findByText(/à 2\.3 km/)).toBeTruthy();
+  });
+
+  it('envoie le prix max et les équipements sélectionnés dans la requête (US-23 / RF-022)', async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.changeText(screen.getByLabelText('Prix max'), '20000');
+    fireEvent.press(screen.getByLabelText('Vestiaires'));
+    fireEvent.press(screen.getByLabelText('Éclairage'));
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+
+    await screen.findByText(/rue 12, dakar/i);
+    expect(fetchMock.mock.calls[0][0]).toContain('prixMax=20000');
+    expect(fetchMock.mock.calls[0][0]).toContain('equipements=vestiaires%2Ceclairage');
+  });
+
+  it("désactive le filtre de distance max tant que la position GPS n'est pas connue, puis l'active une fois acquise", async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    expect(screen.getByLabelText('Distance max (km)').props.editable).toBe(false);
+
+    fireEvent.press(screen.getByLabelText('Trier par proximité'));
+    await screen.findByText(/rue 12, dakar/i);
+
+    expect(screen.getByLabelText('Distance max (km)').props.editable).toBe(true);
+
+    fireEvent.changeText(screen.getByLabelText('Distance max (km)'), '5');
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+
+    await screen.findByText(/rue 12, dakar/i);
+    const dernierAppel = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    expect(dernierAppel[0]).toContain('distanceMaxKm=5');
+  });
+
+  it('affiche les équipements du terrain quand le backend les renvoie', async () => {
+    global.fetch = createFetchMock({
+      results: [{ ...RESULTAT, equipements: ['vestiaires', 'eclairage'] }],
+    }) as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+
+    expect(await screen.findByText(/vestiaires, éclairage/i)).toBeTruthy();
   });
 });

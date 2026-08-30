@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { Sport } from '@app/shared';
+import type { Equipement, Sport } from '@app/shared';
 import type { RechercheFiltres, RechercheResultat } from './types';
 import { searchTerrains } from './rechercheApi';
 
@@ -19,6 +19,11 @@ export interface UseRechercheTerrainsResult {
   heure: string;
   /** Position GPS de l'utilisateur (US-09) — `null` tant que le tri par proximité n'a pas été activé. */
   position: Position | null;
+  /** Champ texte contrôlé (pas encore parsé en nombre) — cohérent avec `date`/`heure` ci-dessus. */
+  prixMax: string;
+  /** Idem `prixMax`. N'est envoyé au backend que si `position` est renseignée (voir `search`) : filtrer par distance sans position de référence n'a pas de sens (RF-022). */
+  distanceMaxKm: string;
+  equipements: Equipement[];
   resultats: RechercheResultat[];
   /** `true` uniquement après une première recherche lancée — permet de distinguer "pas encore cherché" de "recherche sans résultat". */
   hasSearched: boolean;
@@ -29,6 +34,9 @@ export interface UseRechercheTerrainsResult {
   setDate: (value: string) => void;
   setHeure: (value: string) => void;
   setPosition: (position: Position | null) => void;
+  setPrixMax: (value: string) => void;
+  setDistanceMaxKm: (value: string) => void;
+  toggleEquipement: (equipement: Equipement) => void;
   /**
    * `overridePosition` permet de lancer une recherche avec une position qui vient tout juste
    * d'être acquise (ex. callback de géolocalisation) sans attendre le prochain rendu : appeler
@@ -54,10 +62,17 @@ export function useRechercheTerrains({ apiBaseUrl }: UseRechercheTerrainsOptions
   const [date, setDate] = useState('');
   const [heure, setHeure] = useState('');
   const [position, setPosition] = useState<Position | null>(null);
+  const [prixMax, setPrixMax] = useState('');
+  const [distanceMaxKm, setDistanceMaxKm] = useState('');
+  const [equipements, setEquipements] = useState<Equipement[]>([]);
   const [resultats, setResultats] = useState<RechercheResultat[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  const toggleEquipement = useCallback((equipement: Equipement) => {
+    setEquipements((prev) => (prev.includes(equipement) ? prev.filter((e) => e !== equipement) : [...prev, equipement]));
+  }, []);
 
   const search = useCallback(async (overridePosition?: Position) => {
     const effectivePosition = overridePosition ?? position;
@@ -68,6 +83,11 @@ export function useRechercheTerrains({ apiBaseUrl }: UseRechercheTerrainsOptions
       heure: heure || undefined,
       latitude: effectivePosition?.latitude,
       longitude: effectivePosition?.longitude,
+      prixMax: prixMax ? Number(prixMax) : undefined,
+      // Voir le commentaire sur `distanceMaxKm` dans UseRechercheTerrainsResult : omis en
+      // silence sans position plutôt que d'envoyer un filtre inapplicable au backend.
+      distanceMaxKm: effectivePosition && distanceMaxKm ? Number(distanceMaxKm) : undefined,
+      equipements: equipements.length > 0 ? equipements : undefined,
     };
 
     setSearching(true);
@@ -81,7 +101,7 @@ export function useRechercheTerrains({ apiBaseUrl }: UseRechercheTerrainsOptions
     } finally {
       setSearching(false);
     }
-  }, [sport, localisation, date, heure, position, apiBaseUrl]);
+  }, [sport, localisation, date, heure, position, prixMax, distanceMaxKm, equipements, apiBaseUrl]);
 
   return {
     sport,
@@ -89,6 +109,9 @@ export function useRechercheTerrains({ apiBaseUrl }: UseRechercheTerrainsOptions
     date,
     heure,
     position,
+    prixMax,
+    distanceMaxKm,
+    equipements,
     resultats,
     hasSearched,
     searching,
@@ -98,6 +121,9 @@ export function useRechercheTerrains({ apiBaseUrl }: UseRechercheTerrainsOptions
     setDate,
     setHeure,
     setPosition,
+    setPrixMax,
+    setDistanceMaxKm,
+    toggleEquipement,
     search,
   };
 }

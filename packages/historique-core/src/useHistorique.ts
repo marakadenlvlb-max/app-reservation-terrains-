@@ -63,3 +63,14 @@ export function useHistorique({ role, apiBaseUrl, token }: UseHistoriqueOptions)
 export function estSessionTerminee(reservation: HistoriqueReservation): boolean {
   return reservation.statut === 'confirmee' && new Date(reservation.creneau.fin).getTime() < Date.now();
 }
+
+/**
+ * US-22 / RF-021 : une réservation ne peut être proposée à l'annulation que si elle est confirmée
+ * et que le créneau n'a pas encore commencé — au-delà, l'annulation n'a plus de sens (la session a
+ * déjà eu lieu ou est en cours). Le respect du "délai limite" exact de la politique d'annulation
+ * (et donc si un remboursement est dû) reste une décision backend, pas dupliquée ici : voir
+ * `annulerReservation` dans @app/reservation-core.
+ */
+export function estReservationAnnulable(reservation: HistoriqueReservation): boolean {
+  return reservation.statut === 'confirmee' && new Date(reservation.creneau.debut).getTime() > Date.now();
+}

@@ -14,6 +14,7 @@ const RESULTAT = {
   fin: '2026-09-01T19:00',
   tarif: 15000,
   distanceKm: undefined as number | undefined,
+  equipements: [] as ('vestiaires' | 'eclairage' | 'surface')[],
 };
 
 function createFetchMock(overrides: { results?: typeof RESULTAT[]; ok?: boolean } = {}) {
@@ -111,5 +112,67 @@ describe('SearchTerrains', () => {
     await user.click(screen.getByRole('button', { name: /rechercher/i }));
 
     expect(await screen.findByText(/à 2\.3 km/)).toBeInTheDocument();
+  });
+
+  it('envoie le prix max et les équipements sélectionnés dans la requête (US-23 / RF-022)', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<SearchTerrains />);
+
+    await user.type(screen.getByLabelText(/prix max/i), '20000');
+    await user.click(screen.getByRole('checkbox', { name: /vestiaires/i }));
+    await user.click(screen.getByRole('checkbox', { name: /éclairage/i }));
+    await user.click(screen.getByRole('button', { name: /rechercher/i }));
+
+    await screen.findByText(/rue 12, dakar/i);
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain('prixMax=20000');
+    expect(url).toContain('equipements=vestiaires%2Ceclairage');
+  });
+
+  it('désactive le filtre de distance max tant que la position GPS n\'est pas connue', async () => {
+    render(<SearchTerrains />);
+
+    expect(screen.getByLabelText(/distance max/i)).toBeDisabled();
+  });
+
+  it('active le filtre de distance max et l\'envoie une fois la position acquise', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      geolocation: {
+        getCurrentPosition: (success: PositionCallback) => {
+          success({ coords: { latitude: 14.7167, longitude: -17.4677 } } as GeolocationPosition);
+        },
+      },
+    });
+    const user = userEvent.setup();
+    render(<SearchTerrains />);
+
+    await user.click(screen.getByRole('button', { name: /trier par proximité/i }));
+    await screen.findByText(/rue 12, dakar/i);
+
+    expect(screen.getByLabelText(/distance max/i)).toBeEnabled();
+
+    await user.type(screen.getByLabelText(/distance max/i), '5');
+    await user.click(screen.getByRole('button', { name: /rechercher/i }));
+
+    const [url] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    expect(url).toContain('distanceMaxKm=5');
+  });
+
+  it('affiche les équipements du terrain quand le backend les renvoie', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createFetchMock({ results: [{ ...RESULTAT, equipements: ['vestiaires', 'eclairage'] }] })
+    );
+    const user = userEvent.setup();
+    render(<SearchTerrains />);
+
+    await user.click(screen.getByRole('button', { name: /rechercher/i }));
+
+    expect(await screen.findByText(/vestiaires, éclairage/i)).toBeInTheDocument();
   });
 });

@@ -23,6 +23,9 @@ export async function searchTerrains(
   if (filtres.heure) params.set('heure', filtres.heure);
   if (filtres.latitude !== undefined) params.set('latitude', String(filtres.latitude));
   if (filtres.longitude !== undefined) params.set('longitude', String(filtres.longitude));
+  if (filtres.prixMax !== undefined) params.set('prixMax', String(filtres.prixMax));
+  if (filtres.distanceMaxKm !== undefined) params.set('distanceMaxKm', String(filtres.distanceMaxKm));
+  if (filtres.equipements && filtres.equipements.length > 0) params.set('equipements', filtres.equipements.join(','));
 
   const response = await fetch(`${apiBaseUrl}/api/recherche/terrains?${params.toString()}`);
 

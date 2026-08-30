@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View } from 'react-native';
-import { estSessionTerminee, useHistorique, type HistoriqueReservation, type HistoriqueRole } from '@app/historique-core';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import {
+  estReservationAnnulable,
+  estSessionTerminee,
+  useHistorique,
+  type HistoriqueReservation,
+  type HistoriqueRole,
+} from '@app/historique-core';
+import { useAnnulerReservation } from '@app/reservation-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
@@ -35,6 +42,23 @@ export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
   }, []);
 
   const { reservations, loading, error } = useHistorique({ role, apiBaseUrl: API_BASE_URL, token: token ?? null });
+  const { annulingId, annulerError, annuler } = useAnnulerReservation({
+    apiBaseUrl: API_BASE_URL,
+    token: token ?? null,
+  });
+
+  // Mise à jour locale après annulation plutôt qu'un re-fetch complet — même approche que la
+  // mise à jour optimiste du "marquer comme lue" des notifications (US-20).
+  const [statutOverrides, setStatutOverrides] = useState<Record<string, string>>({});
+  const [messagesAnnulation, setMessagesAnnulation] = useState<Record<string, string>>({});
+
+  const handleAnnuler = async (reservationId: string) => {
+    const resultat = await annuler(reservationId);
+    if (resultat) {
+      setStatutOverrides((prev) => ({ ...prev, [reservationId]: 'annulee' }));
+      setMessagesAnnulation((prev) => ({ ...prev, [reservationId]: resultat.message }));
+    }
+  };
 
   if (token === undefined || loading) {
     return (
@@ -65,27 +89,52 @@ export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
   return (
     <View className="flex-1 px-6 pt-16">
       <Text className="mb-4 text-xl font-semibold">{TITRES[role]}</Text>
+      {annulerError && (
+        <Text accessibilityRole="alert" className="mb-2 text-sm text-red-600">
+          {annulerError}
+        </Text>
+      )}
       <FlatList
         data={reservations}
         keyExtractor={(item: HistoriqueReservation) => item.id}
-        renderItem={({ item }) => (
-          <View className="mb-2 rounded border border-gray-200 px-3 py-2">
-            <Text className="font-medium">
-              {item.terrain.adresse} — {item.terrain.sport}
-            </Text>
-            <Text className="text-sm">
-              {item.creneau.debut} → {item.creneau.fin} — {item.montant}
-            </Text>
-            <Text className="text-sm text-gray-600">
-              {AUTRE_PARTIE_LABELS[role]} : {item.autrePartie.nom} — {STATUT_LABELS[item.statut] ?? item.statut}
-            </Text>
-            {estSessionTerminee(item) && (
-              // TODO: navigation vers NotationScreen({ reservationId: item.id, cibleId: item.autrePartie.id })
-              // une fois un routeur choisi — voir le même TODO ailleurs dans le projet.
-              <Text className="text-blue-600">Noter cette session</Text>
-            )}
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const statut = statutOverrides[item.id] ?? item.statut;
+          const effective = { ...item, statut };
+          return (
+            <View className="mb-2 rounded border border-gray-200 px-3 py-2">
+              <Text className="font-medium">
+                {item.terrain.adresse} — {item.terrain.sport}
+              </Text>
+              <Text className="text-sm">
+                {item.creneau.debut} → {item.creneau.fin} — {item.montant}
+              </Text>
+              <Text className="text-sm text-gray-600">
+                {AUTRE_PARTIE_LABELS[role]} : {item.autrePartie.nom} — {STATUT_LABELS[statut] ?? statut}
+              </Text>
+              {estSessionTerminee(effective) && (
+                // TODO: navigation vers NotationScreen({ reservationId: item.id, cibleId: item.autrePartie.id })
+                // une fois un routeur choisi — voir le même TODO ailleurs dans le projet.
+                <Text className="text-blue-600">Noter cette session</Text>
+              )}
+              {role === 'joueur' && estReservationAnnulable(effective) && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Annuler ma réservation : ${item.terrain.adresse}`}
+                  onPress={() => void handleAnnuler(item.id)}
+                  disabled={annulingId === item.id}
+                  className="mt-1 self-start"
+                >
+                  <Text className="text-sm text-red-600">
+                    {annulingId === item.id ? 'Annulation en cours…' : 'Annuler ma réservation'}
+                  </Text>
+                </Pressable>
+              )}
+              {messagesAnnulation[item.id] && (
+                <Text className="text-sm text-green-700">{messagesAnnulation[item.id]}</Text>
+              )}
+            </View>
+          );
+        }}
       />
     </View>
   );
