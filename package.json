@@ -1,0 +1,9 @@
+{
+  "name": "reservation-terrains-sport",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "web",
+    "mobile"
+  ]
+}

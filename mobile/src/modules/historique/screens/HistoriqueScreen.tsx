@@ -1,0 +1,92 @@
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { estSessionTerminee, useHistorique, type HistoriqueReservation, type HistoriqueRole } from '@app/historique-core';
+import { mobileSessionStorage } from '../../authentification/sessionStorage';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
+
+const STATUT_LABELS: Record<string, string> = {
+  en_attente_paiement: 'En attente de paiement',
+  confirmee: 'Confirmée',
+  annulee: 'Annulée',
+};
+
+const TITRES: Record<HistoriqueRole, string> = {
+  joueur: 'Mes réservations',
+  proprietaire: 'Réservations reçues',
+};
+
+const AUTRE_PARTIE_LABELS: Record<HistoriqueRole, string> = {
+  joueur: 'Propriétaire/gestionnaire',
+  proprietaire: 'Joueur',
+};
+
+/**
+ * Historique des réservations — US-18/US-19. Équivalent mobile de HistoriqueList (web), même
+ * hook partagé (useHistorique). Le lien "Noter" est un simple texte (pas de navigation réelle,
+ * pas de routeur en place) : TODO à câbler une fois un routeur choisi, comme les autres écrans
+ * qui prennent leurs ids en props (voir NotationScreen).
+ */
+export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
+  const [token, setToken] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    mobileSessionStorage.getToken().then(setToken);
+  }, []);
+
+  const { reservations, loading, error } = useHistorique({ role, apiBaseUrl: API_BASE_URL, token: token ?? null });
+
+  if (token === undefined || loading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (error && reservations.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-6">
+        <Text accessibilityRole="alert" className="text-sm text-red-600">
+          {error}
+        </Text>
+      </View>
+    );
+  }
+
+  if (reservations.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-6">
+        <Text className="text-sm text-gray-500">Aucune réservation pour l'instant.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 px-6 pt-16">
+      <Text className="mb-4 text-xl font-semibold">{TITRES[role]}</Text>
+      <FlatList
+        data={reservations}
+        keyExtractor={(item: HistoriqueReservation) => item.id}
+        renderItem={({ item }) => (
+          <View className="mb-2 rounded border border-gray-200 px-3 py-2">
+            <Text className="font-medium">
+              {item.terrain.adresse} — {item.terrain.sport}
+            </Text>
+            <Text className="text-sm">
+              {item.creneau.debut} → {item.creneau.fin} — {item.montant}
+            </Text>
+            <Text className="text-sm text-gray-600">
+              {AUTRE_PARTIE_LABELS[role]} : {item.autrePartie.nom} — {STATUT_LABELS[item.statut] ?? item.statut}
+            </Text>
+            {estSessionTerminee(item) && (
+              // TODO: navigation vers NotationScreen({ reservationId: item.id, cibleId: item.autrePartie.id })
+              // une fois un routeur choisi — voir le même TODO ailleurs dans le projet.
+              <Text className="text-blue-600">Noter cette session</Text>
+            )}
+          </View>
+        )}
+      />
+    </View>
+  );
+}

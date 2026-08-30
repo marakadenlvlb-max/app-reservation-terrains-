@@ -1,0 +1,184 @@
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { EQUIPEMENT_OPTIONS, useCreateTerrainForm, useTerrainPhotoUpload, type Terrain } from '@app/annonces-core';
+import { SPORT_OPTIONS } from '@app/shared';
+import { mobileSessionStorage } from '../../authentification/sessionStorage';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
+
+/**
+ * Écran de publication d'annonce — US-04 / RF-004 (module Annonces & Créneaux). Équivalent
+ * mobile de CreateTerrainForm (web) : même logique partagée (useCreateTerrainForm,
+ * useTerrainPhotoUpload), seules la capture de la photo (expo-image-picker) et le stockage de
+ * session diffèrent.
+ */
+export function CreateTerrainScreen() {
+  const [token, setToken] = useState<string | null>(null);
+  const [terrain, setTerrain] = useState<Terrain | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    mobileSessionStorage.getToken().then(setToken);
+  }, []);
+
+  const { sport, adresse, type, equipements, errors, submitting, submitError, setSport, setAdresse, setType, toggleEquipement, submit } =
+    useCreateTerrainForm({
+      apiBaseUrl: API_BASE_URL,
+      token,
+      onSuccess: setTerrain,
+    });
+
+  const { uploading, error: photoError, upload } = useTerrainPhotoUpload({
+    apiBaseUrl: API_BASE_URL,
+    token,
+    onUploaded: (url) => setPhotoUrls((current) => [...current, url]),
+  });
+
+  const pickPhoto = async () => {
+    if (!terrain) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    const formData = new FormData();
+    formData.append('photo', {
+      uri: asset.uri,
+      name: asset.fileName ?? 'photo.jpg',
+      type: asset.mimeType ?? 'image/jpeg',
+    } as unknown as Blob);
+    void upload(terrain.id, formData);
+  };
+
+  if (terrain) {
+    return (
+      <View className="flex-1 justify-center gap-4 px-6">
+        <Text className="text-sm text-green-600">
+          Annonce publiée. Ajoute des photos pour la rendre plus attractive.
+        </Text>
+
+        <ScrollView horizontal className="flex-row gap-2">
+          {photoUrls.map((url) => (
+            <Image key={url} source={{ uri: url }} className="mr-2 h-20 w-20 rounded" />
+          ))}
+        </ScrollView>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Ajouter une photo"
+          onPress={pickPhoto}
+          disabled={uploading}
+        >
+          <Text className="text-sm text-blue-600">{uploading ? 'Envoi…' : 'Ajouter une photo'}</Text>
+        </Pressable>
+        {photoError && (
+          <Text accessibilityRole="alert" className="text-sm text-red-600">
+            {photoError}
+          </Text>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 justify-center gap-4 px-6">
+      <Text className="text-xl font-semibold">Publier une annonce</Text>
+
+      <View className="gap-1">
+        <Text className="text-sm font-medium">Sport</Text>
+        <View className="flex-row gap-4">
+          {SPORT_OPTIONS.map((option) => {
+            const selected = sport === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={option.label}
+                onPress={() => setSport(option.value)}
+                className={`rounded border px-3 py-1 ${
+                  selected ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
+                }`}
+              >
+                <Text>{option.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        {errors.sport && <Text className="text-sm text-red-600">{errors.sport}</Text>}
+      </View>
+
+      <View className="gap-1">
+        <Text className="text-sm font-medium">Adresse</Text>
+        <TextInput
+          accessibilityLabel="Adresse"
+          value={adresse}
+          onChangeText={setAdresse}
+          className="rounded border border-gray-300 px-3 py-2"
+        />
+        {errors.adresse && <Text className="text-sm text-red-600">{errors.adresse}</Text>}
+      </View>
+
+      <View className="gap-1">
+        <Text className="text-sm font-medium">Type de terrain (optionnel)</Text>
+        <TextInput
+          accessibilityLabel="Type de terrain"
+          value={type}
+          onChangeText={setType}
+          placeholder="ex. synthétique extérieur"
+          className="rounded border border-gray-300 px-3 py-2"
+        />
+      </View>
+
+      <View className="gap-1">
+        <Text className="text-sm font-medium">Équipements (optionnel)</Text>
+        <View className="flex-row gap-4">
+          {EQUIPEMENT_OPTIONS.map((option) => {
+            const selected = equipements.includes(option.value);
+            return (
+              <Pressable
+                key={option.value}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={option.label}
+                onPress={() => toggleEquipement(option.value)}
+                className={`rounded border px-3 py-1 ${
+                  selected ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
+                }`}
+              >
+                <Text>{option.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      {submitError && (
+        <Text accessibilityRole="alert" className="text-sm text-red-600">
+          {submitError}
+        </Text>
+      )}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Publier l'annonce"
+        onPress={() => void submit()}
+        disabled={submitting}
+        className="items-center rounded bg-blue-600 px-4 py-2 disabled:opacity-50"
+      >
+        {submitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text className="font-medium text-white">Publier l'annonce</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}

@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "Réservation Terrains",
+    "slug": "reservation-terrains-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait"
+  }
+}
