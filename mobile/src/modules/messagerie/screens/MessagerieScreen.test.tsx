@@ -1,0 +1,77 @@
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { MessagerieScreen } from './MessagerieScreen';
+
+const mockSecureStore = new Map<string, string>([['auth_token', 'token-123']]);
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn((key: string) => Promise.resolve(mockSecureStore.get(key) ?? null)),
+  setItemAsync: jest.fn((key: string, value: string) => {
+    mockSecureStore.set(key, value);
+    return Promise.resolve();
+  }),
+  deleteItemAsync: jest.fn((key: string) => {
+    mockSecureStore.delete(key);
+    return Promise.resolve();
+  }),
+}));
+
+const MESSAGE_AUTRE = {
+  id: 'message-1',
+  reservationId: 'reservation-1',
+  contenu: 'Le terrain a-t-il des vestiaires ?',
+  estDeMoi: false,
+  createdAt: '2026-08-30T10:00:00Z',
+};
+
+beforeEach(() => {
+  mockSecureStore.clear();
+  mockSecureStore.set('auth_token', 'token-123');
+});
+
+describe('MessagerieScreen', () => {
+  it('affiche les messages existants de la conversation', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [MESSAGE_AUTRE] })) as unknown as typeof fetch;
+    render(<MessagerieScreen reservationId="reservation-1" />);
+
+    expect(await screen.findByText(/vestiaires/i)).toBeTruthy();
+  });
+
+  it("affiche un message clair quand la conversation n'a aucun message", async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [] })) as unknown as typeof fetch;
+    render(<MessagerieScreen reservationId="reservation-1" />);
+
+    expect(await screen.findByText(/aucun message/i)).toBeTruthy();
+  });
+
+  it("envoie un nouveau message et l'affiche sans recharger toute la conversation", async () => {
+    const fetchMock = jest.fn((url: string, options?: RequestInit) => {
+      if (options?.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            id: 'message-3',
+            reservationId: 'reservation-1',
+            contenu: 'Merci !',
+            estDeMoi: true,
+            createdAt: '2026-08-30T10:10:00Z',
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => [MESSAGE_AUTRE] });
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<MessagerieScreen reservationId="reservation-1" />);
+
+    await screen.findByText(/vestiaires/i);
+    fireEvent.changeText(screen.getByLabelText('Message'), 'Merci !');
+    fireEvent.press(screen.getByLabelText('Envoyer'));
+
+    expect(await screen.findByText('Merci !')).toBeTruthy();
+  });
+
+  it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
+    mockSecureStore.clear();
+    render(<MessagerieScreen reservationId="reservation-1" />);
+
+    expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
+  });
+});

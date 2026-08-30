@@ -32,9 +32,9 @@ et du PRD du 21 août 2026 (`prd.md`)*
 | US-21 | En tant qu'utilisateur, je veux recevoir un rappel avant mon créneau réservé afin de ne pas l'oublier. | Notifications | Should | S | ✅ Fait (web + mobile) |
 | US-22 | En tant que joueur, je veux annuler ma réservation avant un délai limite et être remboursé afin de récupérer mon argent en cas d'empêchement. | Réservation *(extension)* | Should | M | ✅ Fait (web + mobile) |
 | US-23 | En tant que joueur, je veux filtrer les résultats de recherche par prix, distance et équipements (vestiaires, éclairage, surface) afin d'affiner ma recherche selon mes critères. | Recherche & Catalogue *(extension)* | Should | M | ✅ Fait (web + mobile) |
-| US-24 | En tant que joueur, je veux envoyer un message au propriétaire/gestionnaire pour poser une question sur un créneau afin de clarifier un détail avant de réserver. | Non détaillé dans l'architecture *(extension future, proche de Réservation/Notifications)* | Could | M | À faire |
-| US-25 | En tant que joueur, je veux recevoir des recommandations de terrains basées sur mon historique afin de découvrir des terrains pertinents plus facilement. | Recherche & Catalogue *(extension)* | Could | M | À faire |
-| US-26 | En tant qu'utilisateur, je veux parrainer d'autres joueurs afin de gagner un avantage et faire connaître l'app. | Authentification & Profils *(extension)* | Could | S | À faire |
+| US-24 | En tant que joueur, je veux envoyer un message au propriétaire/gestionnaire pour poser une question sur un créneau afin de clarifier un détail avant de réserver. | Messagerie | Could | M | ✅ Fait (web + mobile) |
+| US-25 | En tant que joueur, je veux recevoir des recommandations de terrains basées sur mon historique afin de découvrir des terrains pertinents plus facilement. | Recommandations | Could | M | ✅ Fait (web + mobile) |
+| US-26 | En tant qu'utilisateur, je veux parrainer d'autres joueurs afin de gagner un avantage et faire connaître l'app. | Parrainage | Could | S | ✅ Fait (web + mobile) |
 
 **Hors backlog V1** (Won't have — voir PRD section 4, hors scope) :
 - Organisation de tournois ou de matchs multi-équipes.
@@ -134,15 +134,15 @@ le permet une fois la V1 Must have livrée et validée.*
 | US-23 | Should | M | ✅ Fait (web + mobile) |
 
 ### Sprint 17 — *(Could have)* Un joueur peut échanger un message avec le propriétaire/gestionnaire
-| User story | Priorité | Estimation |
-|-------------|-----------|--------------|
-| US-24 | Could | M |
+| User story | Priorité | Estimation | Statut |
+|-------------|-----------|--------------|--------|
+| US-24 | Could | M | ✅ Fait (web + mobile) |
 
 ### Sprint 18 — *(Could have)* Un joueur reçoit des recommandations et peut parrainer d'autres joueurs
-| User story | Priorité | Estimation |
-|-------------|-----------|--------------|
-| US-25 | Could | M |
-| US-26 | Could | S |
+| User story | Priorité | Estimation | Statut |
+|-------------|-----------|--------------|--------|
+| US-25 | Could | M | ✅ Fait (web + mobile) |
+| US-26 | Could | S | ✅ Fait (web + mobile) |
 
 ## 3. Matrice de traçabilité
 
@@ -171,15 +171,15 @@ le permet une fois la V1 Must have livrée et validée.*
 | US-21 | Notifications |
 | US-22 | Réservation *(extension)* |
 | US-23 | Recherche & Catalogue *(extension)* |
-| US-24 | Non détaillé dans l'architecture *(extension future)* |
-| US-25 | Recherche & Catalogue *(extension)* |
-| US-26 | Authentification & Profils *(extension)* |
+| US-24 | Messagerie |
+| US-25 | Recommandations |
+| US-26 | Parrainage |
 
-Tous les modules de l'architecture ont au moins une user story associée. US-24 (messagerie
-in-app) n'a pas de module dédié dans `architecture.md` — le document la mentionne comme extension
-future à intégrer une fois la V1 Must have stabilisée ; elle a été rattachée provisoirement au
-périmètre Réservation/Notifications, à préciser en conception si elle est retenue pour une future
-version.
+Tous les modules de l'architecture ont au moins une user story associée. Les modules Messagerie,
+Recommandations et Parrainage ont été détaillés dans `architecture.md` le 30 août 2026, en même
+temps que leur implémentation (US-24/US-25/US-26) — voir la révision correspondante dans ce
+document pour le détail (nouvelles entités MESSAGE et PARRAINAGE, aucun ajout nécessaire pour
+Recommandations).
 
 ## 4. Suivi d'implémentation
 
@@ -208,3 +208,6 @@ version.
 | US-21 | ✅ Fait (30 août 2026) | Même livraison qu'US-20 (mécanisme partagé) + **spécificité mobile** : nouveau hook `usePushRegistration` (`packages/notification-core` + `mobile/.../hooks/`) qui demande la permission et enregistre le jeton `expo-notifications` de l'appareil auprès du backend — sans quoi aucun push FCM n'est délivrable, même si le backend en génère un. Nouvelle dépendance `expo-notifications`. Non pertinent côté web (l'architecture ne prévoit pas de web push, seulement FCM mobile + email/SMS qui n'exigent aucune action du frontend web). **Limite assumée** : l'enregistrement se déclenche en visitant l'écran "Mes notifications", pas globalement à la connexion, faute de routeur applicatif en place (même limite que d'autres écrans du projet). **Sprint 14 clos — premier Should have livré.** Tests écrits et exécutés, verts (mock de `expo-notifications` inclus). Dépend de l'endpoint backend `/api/utilisateurs/moi/push-tokens` (POST), pas encore implémenté côté Laravel. |
 | US-22 | ✅ Fait (30 août 2026) | **Aucun écart d'architecture cette fois** (vérifié avant de coder) : `RESERVATION.statut` et `PAIEMENT.statut` sont déjà des champs `string` ouverts dans le modèle de données, 'annulee' existait déjà comme valeur possible du premier — une annulation/remboursement n'est donc qu'une transition de statut sur des champs déjà modélisés, pas une donnée sans nulle part où être stockée (contrairement à US-03/US-15/US-20/US-21). Extension de `packages/reservation-core/` (`annulerReservation`, `useAnnulerReservation`) + nouveau helper `estReservationAnnulable` dans `packages/historique-core/`. Câblé dans l'historique joueur déjà construit à US-18 (`HistoriqueList` web, `HistoriqueScreen` mobile) : un bouton "Annuler ma réservation" apparaît uniquement côté joueur, sur une réservation confirmée dont le créneau n'a pas encore commencé. **Le frontend ne décide jamais si le "délai limite" du RF-021 est respecté** — il propose l'action puis affiche tel quel le message renvoyé par le backend (remboursé ou non), et met à jour la ligne concernée localement sans re-fetch complet (même pattern que le marquage lu des notifications, US-20). Tests écrits et exécutés, verts. Dépend de l'endpoint backend `/api/reservations/:id/annulation` (POST), pas encore implémenté côté Laravel — en particulier la politique de délai elle-même, qui reste à définir précisément côté métier/backend. |
 | US-23 | ✅ Fait (30 août 2026) | Extension de `packages/recherche-core/` : `RechercheFiltres` gagne `prixMax`/`distanceMaxKm`/`equipements`, tous les trois filtrant des champs déjà modélisés (`CRENEAU.tarif`, la distance déjà calculée pour `distanceKm` depuis US-09, `TERRAIN.equipements`) — **aucun écart d'architecture** non plus ici, même raisonnement qu'US-22. `RechercheResultat` gagne aussi un champ `equipements` (projection de `TERRAIN.equipements`, déjà présent dans `TerrainDetail` depuis US-08 mais pas encore dans les résultats de liste) pour que l'utilisateur voie pourquoi un résultat correspond au filtre. Réutilise `EQUIPEMENT_OPTIONS`/`Equipement` déjà dans `@app/shared` (pas de redéfinition). **Le filtre de distance max est désactivé tant qu'aucune position (US-09) n'est renseignée** — actionnable uniquement après avoir cliqué "Trier par proximité", avec message explicatif. Web (`SearchTerrains`) + Mobile (`SearchTerrainsScreen`) mis à jour en parallèle, même hook partagé `useRechercheTerrains`. Tests écrits et exécutés, verts. **Sprints 15 et 16 clos.** Dépend de l'implémentation réelle du filtrage (prix/distance/équipements) côté endpoint backend `/api/recherche/terrains`, pas encore implémenté côté Laravel. |
+| US-24 | ✅ Fait (30 août 2026) | **Écart d'architecture détecté et corrigé avant codage** : `architecture.md` mentionnait la messagerie comme "non détaillée" — aucune entité MESSAGE n'existait. Ajoutée (reservation_id, auteur_id, contenu, created_at), correction du 30 août 2026. Nouveau module Messagerie dans le tableau des modules (RF-023) et nouveau package `packages/messagerie-core/` (`useMessages` : liste + envoi, mise à jour locale immédiate après envoi). Pas de `destinataire_id` sur MESSAGE : l'autre partie de la conversation se déduit de la réservation (même principe que `HistoriqueReservation.autrePartie`). **Hypothèse de portée documentée dans architecture.md** : une conversation existe dès qu'une réservation est initiée (statut `en_attente_paiement` inclus), pas seulement une fois confirmée — ça correspond à "poser une question... avant de réserver" (le verrouillage temporaire RF-010 crée déjà la réservation à ce stade). Web : `MessagerieView` (page `/reservations/[reservationId]/messages`). Mobile : `MessagerieScreen` (reservationId en prop, pas de routeur). Câblé dans l'historique (US-18/US-19, les deux rôles) via un lien "Envoyer un message" sur chaque réservation. Tests écrits et exécutés, verts. Dépend des endpoints backend `/api/reservations/:id/messages` (GET/POST), pas encore implémentés côté Laravel. |
+| US-25 | ✅ Fait (30 août 2026) | **Aucun écart d'architecture** : une recommandation se calcule à partir de données déjà stockées (historique de réservations via RESERVATION, `UTILISATEUR.sports_pratiques` déjà anticipé par la correction du 29 août 2026) — lecture dérivée, pas de nouvelle donnée à persister. Nouveau module Recommandations dans le tableau des modules (RF-024). Extension de `packages/recherche-core/` : nouveau type `TerrainRecommande` (distinct de `RechercheResultat` — un terrain suggéré n'a pas de créneau précis associé, d'où `tarifMin`), `fetchRecommandations`/`useRecommandations` (contrairement à `searchTerrains`, exige un token : la suggestion dépend de l'historique personnel). Web : `RecommandationsList` (page `/recommandations`, lien réel vers le détail du terrain comme dans `SearchTerrains`). Mobile : `RecommandationsScreen` (même limite de navigation que les autres écrans mobiles). Tests écrits et exécutés, verts. Dépend de l'endpoint backend `/api/recommandations/terrains`, pas encore implémenté côté Laravel — en particulier l'algorithme de suggestion lui-même, qui reste une décision métier backend. |
+| US-26 | ✅ Fait (30 août 2026) | **Écart d'architecture détecté et corrigé avant codage** : rien ne permettait de représenter "qui a parrainé qui" ni de suivre l'avantage accordé. Ajout de l'entité PARRAINAGE (parrain_id, filleul_id, statut, avantage, created_at) et du champ `UTILISATEUR.code_parrainage`, correction du 30 août 2026 — le lien parrain→filleul est porté uniquement par PARRAINAGE (pas de champ redondant sur UTILISATEUR), un filleul n'ayant par construction qu'au plus une ligne PARRAINAGE le concernant. Nouveau module Parrainage dans le tableau des modules (RF-025) et nouveau package `packages/parrainage-core/` (`useParrainage` : code + filleuls + soumission d'un code reçu). **Hypothèse de portée documentée dans architecture.md** : le rattachement filleul→parrain se fait en saisissant un code depuis ce nouveau module, pas au moment de l'inscription (US-01) — évite de rouvrir un formulaire déjà livré et testé pour un besoin Could have. Web : `ParrainageView` (page `/parrainage`). Mobile : `ParrainageScreen`. Tests écrits et exécutés, verts. **Sprints 17 et 18 clos — tout le Could have du backlog initial est livré.** Dépend des endpoints backend `/api/parrainage` (GET) et `/api/parrainage/utiliser` (POST), pas encore implémentés côté Laravel — en particulier la génération du code et la définition précise de l'avantage accordé, qui restent des décisions métier backend. |

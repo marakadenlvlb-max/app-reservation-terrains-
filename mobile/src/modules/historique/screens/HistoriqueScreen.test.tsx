@@ -76,6 +76,16 @@ describe('HistoriqueScreen', () => {
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
 
+  it('propose "Envoyer un message" pour chaque réservation, quel que soit son statut (US-24 / RF-023)', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] })
+    ) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    expect(screen.getAllByText(/envoyer un message/i)).toHaveLength(2);
+  });
+
   it('propose "Annuler ma réservation" uniquement côté joueur pour une réservation confirmée à venir', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] })

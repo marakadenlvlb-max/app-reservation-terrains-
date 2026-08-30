@@ -116,6 +116,8 @@ export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
                 // une fois un routeur choisi — voir le même TODO ailleurs dans le projet.
                 <Text className="text-blue-600">Noter cette session</Text>
               )}
+              {/* TODO: navigation vers MessagerieScreen({ reservationId: item.id }) une fois un routeur choisi. */}
+              <Text className="text-blue-600">Envoyer un message</Text>
               {role === 'joueur' && estReservationAnnulable(effective) && (
                 <Pressable
                   accessibilityRole="button"

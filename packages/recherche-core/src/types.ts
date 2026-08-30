@@ -61,6 +61,25 @@ export interface RechercheResultat {
   equipements: Equipement[];
 }
 
+/**
+ * US-25 / RF-024 : suggestion de terrain calculée côté backend à partir de l'historique de
+ * réservations du joueur — pas un résultat de recherche (aucun créneau précis associé), donc
+ * volontairement distinct de `RechercheResultat`. Ne nécessite aucun ajout au modèle de données
+ * (voir la note de correction du 30 août 2026 dans architecture.md, section 3) : c'est une lecture
+ * dérivée de RESERVATION/TERRAIN/UTILISATEUR.sports_pratiques, pas une nouvelle donnée stockée.
+ * `tarifMin` (plutôt qu'un tarif unique) reflète qu'un terrain recommandé peut avoir plusieurs
+ * créneaux à des tarifs différents.
+ */
+export interface TerrainRecommande {
+  terrainId: string;
+  sport: Sport;
+  adresse: string;
+  type: string | null;
+  photoPrincipale: string | null;
+  equipements: Equipement[];
+  tarifMin: number;
+}
+
 export interface TerrainDetailCreneau {
   id: string;
   debut: string;

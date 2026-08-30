@@ -69,6 +69,19 @@ describe('HistoriqueList', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/connecte-toi/i);
   });
 
+  it('propose "Envoyer un message" pour chaque réservation, quel que soit son statut (US-24 / RF-023)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] }))
+    );
+    render(<HistoriqueList role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    const liens = screen.getAllByRole('link', { name: /envoyer un message/i });
+    expect(liens).toHaveLength(2);
+    expect(liens[0]).toHaveAttribute('href', '/reservations/reservation-1/messages');
+  });
+
   it('propose "Annuler ma réservation" uniquement côté joueur pour une réservation confirmée à venir', async () => {
     vi.stubGlobal(
       'fetch',

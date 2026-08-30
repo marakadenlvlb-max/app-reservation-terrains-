@@ -103,6 +103,12 @@ export function HistoriqueList({ role }: { role: HistoriqueRole }) {
                   Noter cette session
                 </Link>
               )}
+              <Link
+                href={`/reservations/${reservation.id}/messages`}
+                className="block text-blue-600 underline"
+              >
+                Envoyer un message
+              </Link>
               {role === 'joueur' && estReservationAnnulable(effective) && (
                 <button
                   type="button"

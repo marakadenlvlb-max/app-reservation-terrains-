@@ -3,6 +3,8 @@
 *Rédigé le 22 août 2026, à partir du SRS validé (srs.md, rédigé le 22 août 2026)*
 *Révision du 29 août 2026 : correction du modèle de données (section 3) — voir note en fin de
 section 3.*
+*Révision du 30 août 2026 : détail des modules Should/Could have restants (section 2) et
+correction du modèle de données pour Messagerie/Parrainage (section 3) — voir notes correspondantes.*
 
 ## 1. Stack technique
 
@@ -62,6 +64,9 @@ graph TD
     Notation[Module Notation & Réputation]
     Historique[Module Historique]
     Notifications[Module Notifications]
+    Messagerie[Module Messagerie]
+    Recommandations[Module Recommandations]
+    Parrainage[Module Parrainage]
     DB[(PostgreSQL + PostGIS)]
     Wave[API Wave]
     OM[API Orange Money]
@@ -76,6 +81,9 @@ graph TD
     API --> Reservation
     API --> Notation
     API --> Historique
+    API --> Messagerie
+    API --> Recommandations
+    API --> Parrainage
     Reservation --> Paiement
     Paiement --> Wave
     Paiement --> OM
@@ -83,6 +91,10 @@ graph TD
     Recherche --> Geo
     Notifications --> Push
     Reservation --> Notifications
+    Reservation --> Messagerie
+    Historique --> Recommandations
+    Recherche --> Recommandations
+    Auth --> Parrainage
     Auth --> DB
     Annonces --> DB
     Recherche --> DB
@@ -90,20 +102,32 @@ graph TD
     Paiement --> DB
     Notation --> DB
     Historique --> DB
+    Messagerie --> DB
+    Recommandations --> DB
+    Parrainage --> DB
 ```
 
 | Module | Responsabilité | Exigences couvertes |
 |--------|------------------|----------------------|
 | Authentification & Profils | Inscription, connexion, gestion du profil joueur | RF-001, RF-002, RF-003 |
 | Annonces & Créneaux | Publication d'annonces (particulier ou gestionnaire), définition des créneaux et tarifs | RF-004, RF-005, RF-006 |
-| Recherche & Catalogue | Recherche par sport/localisation/date, consultation du détail d'une annonce | RF-007, RF-008, RF-009 |
-| Réservation | Sélection d'un créneau, verrouillage temporaire, confirmation après paiement | RF-010, RF-014 |
+| Recherche & Catalogue | Recherche par sport/localisation/date, consultation du détail d'une annonce, filtres avancés (prix/distance/équipements) | RF-007, RF-008, RF-009, RF-022 |
+| Réservation | Sélection d'un créneau, verrouillage temporaire, confirmation après paiement, annulation et remboursement | RF-010, RF-014, RF-021 |
 | Paiement | Abstraction commune aux trois opérateurs, déclenchement du paiement, réception des webhooks, reversement | RF-011, RF-012, RF-013, RF-015 |
 | Notation & Réputation | Enregistrement des notes/commentaires post-session, calcul de la note moyenne | RF-016, RF-017 |
 | Historique | Consultation de l'historique des réservations (joueur et propriétaire/gestionnaire) | RF-018, RF-019 |
 | Notifications | Confirmation de réservation, rappels avant créneau | RF-020 |
+| Messagerie | Échange de messages entre un joueur et un propriétaire/gestionnaire au sujet d'une réservation | RF-023 |
+| Recommandations | Suggestion de terrains à un joueur à partir de son historique de réservations | RF-024 |
+| Parrainage | Parrainage d'autres utilisateurs et suivi des avantages associés | RF-025 |
 
-*Modules Should/Could have (annulation/remboursement, messagerie, recommandations, parrainage — RF-021 à RF-025) non détaillés dans ce premier découpage : à intégrer comme extensions du module Réservation/Notification une fois la V1 Must have stabilisée.*
+> **Révision du 30 août 2026** : la version initiale de ce tableau laissait les modules Should/
+> Could have "non détaillés". RF-021 (annulation/remboursement) et RF-022 (filtres de recherche)
+> n'ont finalement pas eu besoin d'un module dédié — ce sont de simples extensions de Réservation
+> et Recherche & Catalogue (colonnes "Exigences couvertes" mises à jour ci-dessus en conséquence).
+> RF-023 (Messagerie), RF-024 (Recommandations) et RF-025 (Parrainage) sont en revanche de vraies
+> capacités supplémentaires, détaillées ci-dessus comme modules à part entière — voir la section 3
+> pour les ajouts au modèle de données que ça a nécessités (ou pas, pour Recommandations).
 
 ## 3. Modèle de données
 
@@ -118,6 +142,10 @@ erDiagram
     RESERVATION ||--o{ NOTATION : declenche
     UTILISATEUR ||--o{ NOTIFICATION : recoit
     RESERVATION ||--o{ NOTIFICATION : declenche
+    UTILISATEUR ||--o{ MESSAGE : redige
+    RESERVATION ||--o{ MESSAGE : concerne
+    UTILISATEUR ||--o{ PARRAINAGE : parraine
+    UTILISATEUR ||--o| PARRAINAGE : est_filleul
 
     UTILISATEUR {
         uuid id
@@ -128,6 +156,7 @@ erDiagram
         string photo_url
         json sports_pratiques
         json push_tokens
+        string code_parrainage
         decimal note_moyenne
         datetime created_at
     }
@@ -190,6 +219,21 @@ erDiagram
         boolean lue
         datetime created_at
     }
+    MESSAGE {
+        uuid id
+        uuid reservation_id
+        uuid auteur_id
+        string contenu
+        datetime created_at
+    }
+    PARRAINAGE {
+        uuid id
+        uuid parrain_id
+        uuid filleul_id
+        string statut
+        string avantage
+        datetime created_at
+    }
 ```
 
 > **Correction du 29 août 2026** : `sports_pratiques` (liste parmi foot/tennis/basket) a été
@@ -200,7 +244,7 @@ erDiagram
 > listes de valeurs fermées : aucune exigence actuelle (recherche, filtrage) ne porte sur les
 > sports pratiqués par un utilisateur, donc une table de jointure ajouterait de la complexité
 > relationnelle sans bénéfice concret pour l'instant. À revisiter si une future fonctionnalité
-> (ex. recommandations RF-025 Could have) doit un jour requêter les utilisateurs par sport
+> (ex. recommandations RF-024 Could have) doit un jour requêter les utilisateurs par sport
 > pratiqué.
 
 > **Correction du 30 août 2026** : ajout à l'entité PAIEMENT de `commission`, `montant_net`
@@ -229,6 +273,33 @@ erDiagram
 > (JSON plutôt qu'entité séparée, cohérent avec `TERRAIN.equipements`) : la liste des jetons
 > d'appareils d'un utilisateur n'a pas besoin d'être une table à part pour l'instant.
 
+> **Correction du 30 août 2026** : ajout de l'entité MESSAGE (reservation_id, auteur_id, contenu,
+> created_at) pour la messagerie in-app (RF-023, US-24) — rien dans le modèle initial ne
+> permettait de stocker un échange de messages. Pas de champ `destinataire_id` : comme pour
+> `HistoriqueReservation.autrePartie` (module Historique), l'autre partie d'une conversation se
+> déduit de la réservation elle-même (le joueur via `RESERVATION.joueur_id`, le
+> propriétaire/gestionnaire via `TERRAIN.proprietaire_id` du créneau réservé) — pas besoin de la
+> stocker une deuxième fois par message. Pas de champ `lu` non plus : RF-023 exige un échange de
+> messages, pas un accusé de lecture par message (contrairement à `NOTIFICATION.lue`, exigé
+> explicitement par RF-020) ; à ajouter si un futur besoin en ce sens émerge.
+>
+> Ajout également de l'entité PARRAINAGE (parrain_id, filleul_id, statut, avantage, created_at) et
+> du champ `UTILISATEUR.code_parrainage` (RF-025, US-26) — rien ne permettait de représenter "qui
+> a parrainé qui" ni de suivre l'avantage accordé. Le lien parrain→filleul est porté uniquement
+> par PARRAINAGE (pas de champ redondant sur UTILISATEUR) : un filleul n'a par construction qu'au
+> plus une ligne PARRAINAGE le concernant (relation `||--o|`), un parrain peut en avoir plusieurs
+> (`||--o{`). **Hypothèse de portée** : rattacher un filleul à un parrain se fait en saisissant le
+> code de parrainage depuis le nouveau module Parrainage (pas au moment de l'inscription, RF-001)
+> — le SRS n'impose pas ce moment précis, et ça évite de rouvrir le formulaire d'inscription déjà
+> livré et testé (US-01) pour un besoin Could have. À revisiter si le produit veut au contraire
+> capturer le parrainage dès l'inscription.
+>
+> RF-024 (recommandations, US-25) n'a en revanche nécessité **aucune** modification du modèle de
+> données : une recommandation se calcule à partir de données déjà stockées (l'historique de
+> réservations d'un joueur via RESERVATION, ses sports pratiqués via
+> `UTILISATEUR.sports_pratiques`, anticipé par la note de correction du 29 août 2026 ci-dessus) —
+> c'est un endpoint de lecture dérivée, pas une nouvelle donnée à persister.
+
 ## 4. Choix d'intégration
 
 | Intégration | Utilisée par (module) | Détails techniques | Exigence(s) source |
@@ -251,15 +322,20 @@ La couche Paiement expose une interface commune ("adaptateur de paiement") derri
 | Hébergement : PaaS/hébergeur régional | RNF-001, RNF-005 |
 | Module Authentification & Profils | RF-001, RF-002, RF-003 |
 | Module Annonces & Créneaux | RF-004, RF-005, RF-006 |
-| Module Recherche & Catalogue | RF-007, RF-008, RF-009 |
-| Module Réservation | RF-010, RF-014 |
+| Module Recherche & Catalogue | RF-007, RF-008, RF-009, RF-022 |
+| Module Réservation | RF-010, RF-014, RF-021 |
 | Module Paiement (+ adaptateurs Wave/OM/Moov) | RF-011, RF-012, RF-013, RF-015 |
 | Module Notation & Réputation | RF-016, RF-017 |
 | Module Historique | RF-018, RF-019 |
 | Module Notifications | RF-020 |
+| Module Messagerie | RF-023 |
+| Module Recommandations | RF-024 |
+| Module Parrainage | RF-025 |
 | Entités Utilisateur / Terrain / Créneau / Réservation / Paiement / Notation | RF-001 à RF-019 (support de données) |
 | Champ UTILISATEUR.sports_pratiques *(ajouté le 29 août 2026)* | RF-001, RF-003 |
 | Champs PAIEMENT.commission/montant_net/statut_reversement/date_reversement *(ajoutés le 30 août 2026)* | RF-015 |
 | Entité NOTIFICATION + champ UTILISATEUR.push_tokens *(ajoutés le 30 août 2026)* | RF-020 |
+| Entité MESSAGE *(ajoutée le 30 août 2026)* | RF-023 |
+| Entité PARRAINAGE + champ UTILISATEUR.code_parrainage *(ajoutés le 30 août 2026)* | RF-025 |
 | Intégration géolocalisation | RF-007 |
 | Intégration notifications | RF-020 |
