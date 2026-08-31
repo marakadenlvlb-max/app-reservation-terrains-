@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { SPORT_OPTIONS, useProfileForm, usePhotoUpload } from '@app/auth-core';
+import { SPORT_OPTIONS, useProfileForm, usePhotoUpload, useSessionToken } from '@app/auth-core';
 import { mobileSessionStorage } from '../sessionStorage';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
@@ -12,11 +11,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
  * (expo-image-picker plutôt qu'un input file) et le stockage de session diffèrent.
  */
 export function ProfileScreen() {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    mobileSessionStorage.getToken().then(setToken);
-  }, []);
+  const token = useSessionToken(mobileSessionStorage);
 
   const {
     loading,
@@ -34,11 +29,11 @@ export function ProfileScreen() {
     toggleSport,
     setPhotoUrl,
     save,
-  } = useProfileForm({ apiBaseUrl: API_BASE_URL, token });
+  } = useProfileForm({ apiBaseUrl: API_BASE_URL, token: token ?? null });
 
   const { uploading, error: photoError, upload } = usePhotoUpload({
     apiBaseUrl: API_BASE_URL,
-    token,
+    token: token ?? null,
     onUploaded: setPhotoUrl,
   });
 
@@ -64,7 +59,7 @@ export function ProfileScreen() {
     void upload(formData);
   };
 
-  if (loading) {
+  if (token === undefined || loading) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator />

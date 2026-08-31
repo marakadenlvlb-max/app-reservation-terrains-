@@ -16,6 +16,7 @@ export async function initierPaiement(
 ): Promise<InitierPaiementResult> {
   const response = await fetch(`${apiBaseUrl}/api/paiements`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ reservationId, operateur }),
   });
@@ -38,6 +39,7 @@ export async function initierPaiement(
  */
 export async function fetchReversements(apiBaseUrl: string, token: string): Promise<Reversement[]> {
   const response = await fetch(`${apiBaseUrl}/api/reversements`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 

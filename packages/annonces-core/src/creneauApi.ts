@@ -12,6 +12,7 @@ export async function fetchCreneaux(
   token: string
 ): Promise<Creneau[]> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/${terrainId}/creneaux`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -29,6 +30,7 @@ export async function createCreneau(
 ): Promise<Creneau> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/${payload.terrainId}/creneaux`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ debut: payload.debut, fin: payload.fin, tarif: payload.tarif }),
   });
@@ -55,6 +57,7 @@ export async function updateCreneau(
 ): Promise<Creneau> {
   const response = await fetch(`${apiBaseUrl}/api/creneaux/${creneauId}`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });
@@ -70,6 +73,7 @@ export async function updateCreneau(
 export async function deleteCreneau(creneauId: string, apiBaseUrl: string, token: string): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/api/creneaux/${creneauId}`, {
     method: 'DELETE',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 

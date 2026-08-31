@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useSessionToken } from '@app/auth-core';
 import { EQUIPEMENT_OPTIONS, useEditTerrainForm } from '@app/annonces-core';
 import { SPORT_OPTIONS } from '@app/shared';
 import { webSessionStorage } from '../../authentification/sessionStorage';
@@ -13,12 +14,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
  * liste "publication d'une annonce" comme une capacité complète, pas seulement sa création).
  */
 export function EditTerrainForm({ terrainId }: { terrainId: string }) {
-  const [token, setToken] = useState<string | null>(null);
+  // BUG-005 (rapport-qa.md, corrigé le 31 août 2026) : quatrième occurrence du même défaut que
+  // BUG-002 — désormais éliminée à la racine via useSessionToken (packages/auth-core), qui
+  // distingue "pas encore lu" (undefined) de "confirmé non connecté" (null) une fois pour toutes.
+  const token = useSessionToken(webSessionStorage);
   const [deleted, setDeleted] = useState(false);
-
-  useEffect(() => {
-    webSessionStorage.getToken().then(setToken);
-  }, []);
 
   const {
     loading,
@@ -42,7 +42,7 @@ export function EditTerrainForm({ terrainId }: { terrainId: string }) {
   } = useEditTerrainForm({
     terrainId,
     apiBaseUrl: API_BASE_URL,
-    token,
+    token: token ?? null,
     onDeleted: () => setDeleted(true),
   });
 
@@ -59,7 +59,7 @@ export function EditTerrainForm({ terrainId }: { terrainId: string }) {
     return <p className="text-sm text-green-600">Annonce retirée.</p>;
   }
 
-  if (loading) {
+  if (token === undefined || loading) {
     return <p>Chargement de l'annonce…</p>;
   }
 

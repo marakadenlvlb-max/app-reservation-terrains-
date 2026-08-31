@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { useSessionToken } from '@app/auth-core';
 import { useCreneaux, type Creneau } from '@app/annonces-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
 
@@ -25,11 +26,10 @@ const STATUT_LABELS: Record<string, string> = {
  * (input datetime-local) sans dépendance native supplémentaire pour cette V1.
  */
 export function CreneauxScreen({ terrainId }: { terrainId: string }) {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    mobileSessionStorage.getToken().then(setToken);
-  }, []);
+  // BUG-004 (rapport-qa.md, corrigé le 31 août 2026) : useSessionToken élimine à la racine le
+  // défaut qui confondait "pas encore lu" et "confirmé non connecté" (troisième occurrence de ce
+  // motif dans le projet avant l'extraction de ce hook partagé).
+  const token = useSessionToken(mobileSessionStorage);
 
   const {
     creneaux,
@@ -51,9 +51,9 @@ export function CreneauxScreen({ terrainId }: { terrainId: string }) {
     removingId,
     removeError,
     removeCreneau,
-  } = useCreneaux({ terrainId, apiBaseUrl: API_BASE_URL, token });
+  } = useCreneaux({ terrainId, apiBaseUrl: API_BASE_URL, token: token ?? null });
 
-  if (loading) {
+  if (token === undefined || loading) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator />

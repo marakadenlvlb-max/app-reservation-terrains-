@@ -61,4 +61,37 @@ describe('LoginScreen', () => {
     expect(await screen.findByText(/identifiant ou mot de passe incorrect/i)).toBeTruthy();
     expect(mockSecureStore.get('auth_token')).toBeUndefined();
   });
+
+  // TC-002-06 (rapport-qa.md) : le test "formulaire vide" plus haut ne prouve que le cas "les
+  // deux champs vides ensemble" — pas qu'un seul champ manquant n'affiche que l'erreur qui le
+  // concerne (validateLoginPayload vérifie pourtant chaque champ indépendamment).
+  it.each([
+    {
+      cas: 'identifiant seul rempli',
+      identifiant: 'joueur@example.com',
+      motDePasse: '',
+      erreurAttendue: /mot de passe requis/i,
+      erreurAbsente: /email ou téléphone requis/i,
+    },
+    {
+      cas: 'mot de passe seul rempli',
+      identifiant: '',
+      motDePasse: 'motdepasse123',
+      erreurAttendue: /email ou téléphone requis/i,
+      erreurAbsente: /mot de passe requis/i,
+    },
+  ])(
+    "n'affiche que l'erreur du champ manquant : $cas",
+    async ({ identifiant, motDePasse, erreurAttendue, erreurAbsente }) => {
+      render(<LoginScreen />);
+
+      if (identifiant) fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), identifiant);
+      if (motDePasse) fireEvent.changeText(screen.getByLabelText('Mot de passe'), motDePasse);
+      fireEvent.press(screen.getByLabelText('Se connecter'));
+
+      expect(await screen.findByText(erreurAttendue)).toBeTruthy();
+      expect(screen.queryByText(erreurAbsente)).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  );
 });

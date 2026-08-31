@@ -9,6 +9,7 @@ import type { TerrainRecommande } from './types';
  */
 export async function fetchRecommandations(apiBaseUrl: string, token: string): Promise<TerrainRecommande[]> {
   const response = await fetch(`${apiBaseUrl}/api/recommandations/terrains`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 

@@ -16,6 +16,7 @@ export async function fetchHistorique(
 ): Promise<HistoriqueReservation[]> {
   const path = role === 'joueur' ? '/api/reservations/mes-reservations' : '/api/reservations/recues';
   const response = await fetch(`${apiBaseUrl}${path}`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 

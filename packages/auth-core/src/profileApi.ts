@@ -9,6 +9,7 @@ import type { Profile, UpdateProfilePayload } from './types';
  */
 export async function fetchProfile(apiBaseUrl: string, token: string): Promise<Profile> {
   const response = await fetch(`${apiBaseUrl}/api/profile`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -26,6 +27,7 @@ export async function updateProfile(
 ): Promise<Profile> {
   const response = await fetch(`${apiBaseUrl}/api/profile`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });
@@ -51,6 +53,7 @@ export async function uploadProfilePhoto(
 ): Promise<{ photoUrl: string }> {
   const response = await fetch(`${apiBaseUrl}/api/profile/photo`, {
     method: 'POST',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });

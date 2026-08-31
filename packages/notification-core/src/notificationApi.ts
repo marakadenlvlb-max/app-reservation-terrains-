@@ -10,6 +10,7 @@ import type { Notification } from './types';
  */
 export async function fetchNotifications(apiBaseUrl: string, token: string): Promise<Notification[]> {
   const response = await fetch(`${apiBaseUrl}/api/notifications`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -27,6 +28,7 @@ export async function marquerCommeLue(
 ): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/api/notifications/${notificationId}/lue`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -48,6 +50,7 @@ export async function enregistrerPushToken(
 ): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/api/utilisateurs/moi/push-tokens`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ pushToken }),
   });

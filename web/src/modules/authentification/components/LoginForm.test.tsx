@@ -38,9 +38,13 @@ describe('LoginForm', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/auth/login'),
-      expect.objectContaining({ method: 'POST' })
+      expect.objectContaining({ method: 'POST', credentials: 'include' })
     );
-    await waitFor(() => expect(window.localStorage.getItem('auth_token')).toBe('abc123'));
+    // Depuis la correction RNF-002 du 31 août 2026 (BUG-001), le vrai token ('abc123' renvoyé par
+    // l'API) n'est plus jamais persisté côté web — voir sessionStorage.ts. localStorage ne
+    // contient plus qu'un marqueur non sensible, le vrai secret vivant dans un cookie HttpOnly
+    // que ce test (comme le navigateur réel) ne peut pas lire.
+    await waitFor(() => expect(window.localStorage.getItem('auth_token')).toBe('authenticated'));
   });
 
   it('affiche un message générique si les identifiants sont incorrects', async () => {
@@ -55,4 +59,38 @@ describe('LoginForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/identifiant ou mot de passe incorrect/i);
     expect(window.localStorage.getItem('auth_token')).toBeNull();
   });
+
+  // TC-002-06 (rapport-qa.md) : le test "formulaire vide" plus haut ne prouve que le cas "les
+  // deux champs vides ensemble" — pas qu'un seul champ manquant n'affiche que l'erreur qui le
+  // concerne (validateLoginPayload vérifie pourtant chaque champ indépendamment).
+  it.each([
+    {
+      cas: 'identifiant seul rempli',
+      identifiant: 'joueur@example.com',
+      motDePasse: '',
+      erreurAttendue: /mot de passe requis/i,
+      erreurAbsente: /email ou téléphone requis/i,
+    },
+    {
+      cas: 'mot de passe seul rempli',
+      identifiant: '',
+      motDePasse: 'motdepasse123',
+      erreurAttendue: /email ou téléphone requis/i,
+      erreurAbsente: /mot de passe requis/i,
+    },
+  ])(
+    "n'affiche que l'erreur du champ manquant : $cas",
+    async ({ identifiant, motDePasse, erreurAttendue, erreurAbsente }) => {
+      const user = userEvent.setup();
+      render(<LoginForm />);
+
+      if (identifiant) await user.type(screen.getByLabelText(/email ou téléphone/i), identifiant);
+      if (motDePasse) await user.type(screen.getByLabelText(/mot de passe/i), motDePasse);
+      await user.click(screen.getByRole('button', { name: /se connecter/i }));
+
+      expect(await screen.findByText(erreurAttendue)).toBeInTheDocument();
+      expect(screen.queryByText(erreurAbsente)).not.toBeInTheDocument();
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  );
 });

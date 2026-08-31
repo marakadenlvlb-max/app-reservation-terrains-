@@ -15,6 +15,7 @@ export async function initierReservation(
 ): Promise<Reservation> {
   const response = await fetch(`${apiBaseUrl}/api/reservations`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ creneauId }),
   });
@@ -39,6 +40,7 @@ export async function fetchReservation(
   token: string
 ): Promise<Reservation> {
   const response = await fetch(`${apiBaseUrl}/api/reservations/${reservationId}`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -62,6 +64,7 @@ export async function annulerReservation(
 ): Promise<AnnulationReponse> {
   const response = await fetch(`${apiBaseUrl}/api/reservations/${reservationId}/annulation`, {
     method: 'POST',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 

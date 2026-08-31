@@ -1,22 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { SPORT_OPTIONS, useProfileForm, usePhotoUpload } from '@app/auth-core';
+import { SPORT_OPTIONS, useProfileForm, usePhotoUpload, useSessionToken } from '@app/auth-core';
 import { webSessionStorage } from '../sessionStorage';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 /**
  * Formulaire d'édition du profil — US-03 / RF-003 (module Authentification & Profils).
- * Le token de session (US-02) est lu une fois au montage depuis webSessionStorage ; useProfileForm
- * ne déclenche l'appel de chargement qu'une fois ce token disponible.
+ * Le token de session (US-02) est lu une fois au montage via useSessionToken ; useProfileForm ne
+ * déclenche l'appel de chargement qu'une fois ce token résolu (voir sa doc pour BUG-002, qui a
+ * motivé l'extraction de ce hook partagé).
  */
 export function ProfileForm() {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    webSessionStorage.getToken().then(setToken);
-  }, []);
+  const token = useSessionToken(webSessionStorage);
 
   const {
     loading,
@@ -34,11 +30,11 @@ export function ProfileForm() {
     toggleSport,
     setPhotoUrl,
     save,
-  } = useProfileForm({ apiBaseUrl: API_BASE_URL, token });
+  } = useProfileForm({ apiBaseUrl: API_BASE_URL, token: token ?? null });
 
   const { uploading, error: photoError, upload } = usePhotoUpload({
     apiBaseUrl: API_BASE_URL,
-    token,
+    token: token ?? null,
     onUploaded: setPhotoUrl,
   });
 
@@ -51,7 +47,7 @@ export function ProfileForm() {
     void upload(formData);
   };
 
-  if (loading) {
+  if (token === undefined || loading) {
     return <p>Chargement du profil…</p>;
   }
 

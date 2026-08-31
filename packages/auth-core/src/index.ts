@@ -2,6 +2,7 @@ export * from './types';
 export * from './constants';
 export * from './validation';
 export * from './session';
+export * from './useSessionToken';
 export * from './registerApi';
 export * from './useRegisterForm';
 export * from './loginApi';

@@ -35,20 +35,35 @@ const RESERVED_CRENEAU = {
 };
 
 function createFetchMock(
-  overrides: { createOk?: boolean; list?: typeof EXISTING_CRENEAU[] } = {}
+  overrides: {
+    createOk?: boolean;
+    updateOk?: boolean;
+    removeOk?: boolean;
+    listOk?: boolean;
+    list?: typeof EXISTING_CRENEAU[];
+  } = {}
 ) {
   return vi.fn((url: string, options?: RequestInit) => {
     if (options?.method === 'POST') {
       if (overrides.createOk === false) {
-        return Promise.resolve({ ok: false, json: async () => null });
+        return Promise.resolve({ ok: false, json: async () => ({ message: "L'ajout du créneau a échoué." }) });
       }
       return Promise.resolve({ ok: true, json: async () => NEW_CRENEAU });
     }
     if (options?.method === 'PATCH') {
+      if (overrides.updateOk === false) {
+        return Promise.resolve({ ok: false, json: async () => ({ message: 'La modification a échoué.' }) });
+      }
       return Promise.resolve({ ok: true, json: async () => ({ ...EXISTING_CRENEAU, tarif: 18000 }) });
     }
     if (options?.method === 'DELETE') {
+      if (overrides.removeOk === false) {
+        return Promise.resolve({ ok: false, json: async () => ({ message: 'Le retrait a échoué.' }) });
+      }
       return Promise.resolve({ ok: true, json: async () => ({}) });
+    }
+    if (overrides.listOk === false) {
+      return Promise.resolve({ ok: false, json: async () => null });
     }
     return Promise.resolve({ ok: true, json: async () => overrides.list ?? [EXISTING_CRENEAU] });
   });
@@ -146,5 +161,72 @@ describe('CreneauxManager', () => {
     await screen.findByText(/2026-09-03 18:00/);
     expect(screen.getByRole('button', { name: /^modifier$/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /^retirer$/i })).toBeDisabled();
+  });
+
+  // TC-005-09 (rapport-qa.md) : aucun test ne simulait un échec du chargement initial.
+  it('affiche une erreur bloquante si le chargement des créneaux échoue', async () => {
+    vi.stubGlobal('fetch', createFetchMock({ listOk: false }));
+    render(<CreneauxManager terrainId="terrain-1" />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/créneaux/i);
+  });
+
+  // TC-005-10 (rapport-qa.md) : le mock supportait déjà `createOk: false` mais aucun test ne
+  // l'invoquait — le formulaire doit garder les valeurs saisies pour permettre une correction.
+  it("affiche une erreur si l'ajout d'un créneau échoue, sans vider le formulaire", async () => {
+    vi.stubGlobal('fetch', createFetchMock({ createOk: false }));
+    const user = userEvent.setup();
+    render(<CreneauxManager terrainId="terrain-1" />);
+
+    await screen.findByText(/2026-09-01 18:00/);
+    fireEvent.change(screen.getByLabelText(/début/i), { target: { value: '2026-09-02T10:00' } });
+    fireEvent.change(screen.getByLabelText(/^fin$/i), { target: { value: '2026-09-02T11:00' } });
+    fireEvent.change(screen.getByLabelText(/tarif/i), { target: { value: '15000' } });
+    await user.click(screen.getByRole('button', { name: /ajouter le créneau/i }));
+
+    expect(await screen.findByText(/l'ajout du créneau a échoué/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/début/i)).toHaveValue('2026-09-02T10:00');
+  });
+
+  // TC-005-11 (rapport-qa.md) : comportement documenté en commentaire ("ne referme le mode
+  // édition qu'en cas de succès réel") mais jamais vérifié par un test.
+  it('affiche une erreur de modification et laisse le mode édition ouvert', async () => {
+    vi.stubGlobal('fetch', createFetchMock({ updateOk: false }));
+    const user = userEvent.setup();
+    render(<CreneauxManager terrainId="terrain-1" />);
+
+    await screen.findByText(/2026-09-01 18:00/);
+    await user.click(screen.getByRole('button', { name: /^modifier$/i }));
+    fireEvent.change(screen.getAllByLabelText(/^tarif$/i)[0], { target: { value: '18000' } });
+    await user.click(screen.getByRole('button', { name: /^enregistrer$/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/modification a échoué/i);
+    // Le mode édition est resté ouvert : le champ "Tarif" modifiable est toujours affiché.
+    expect(screen.getByRole('button', { name: /^enregistrer$/i })).toBeInTheDocument();
+  });
+
+  // TC-005-12 (rapport-qa.md) : aucun test ne simulait un échec du retrait.
+  it('affiche une erreur de retrait et garde le créneau dans la liste', async () => {
+    vi.stubGlobal('fetch', createFetchMock({ removeOk: false }));
+    const user = userEvent.setup();
+    render(<CreneauxManager terrainId="terrain-1" />);
+
+    await screen.findByText(/2026-09-01 18:00/);
+    await user.click(screen.getByRole('button', { name: /^retirer$/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/retrait a échoué/i);
+    expect(screen.getByText(/2026-09-01 18:00/)).toBeInTheDocument();
+  });
+
+  // TC-005-13 / BUG-004 (rapport-qa.md, corrigé le 31 août 2026) : un utilisateur déjà
+  // authentifié ne doit jamais voir "Connecte-toi..." s'afficher, même brièvement.
+  it("n'affiche jamais le message de connexion pour un utilisateur déjà authentifié", async () => {
+    vi.stubGlobal('fetch', createFetchMock());
+    render(<CreneauxManager terrainId="terrain-1" />);
+
+    expect(screen.queryByText(/connecte-toi/i)).not.toBeInTheDocument();
+
+    await screen.findByText(/2026-09-01 18:00/);
+    expect(screen.queryByText(/connecte-toi/i)).not.toBeInTheDocument();
   });
 });

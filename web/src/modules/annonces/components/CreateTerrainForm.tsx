@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useSessionToken } from '@app/auth-core';
 import { EQUIPEMENT_OPTIONS, useCreateTerrainForm, useTerrainPhotoUpload, type Terrain } from '@app/annonces-core';
 import { SPORT_OPTIONS } from '@app/shared';
 import { webSessionStorage } from '../../authentification/sessionStorage';
@@ -14,24 +15,26 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
  * qu'un `terrainId` existe pour les rattacher.
  */
 export function CreateTerrainForm() {
-  const [token, setToken] = useState<string | null>(null);
+  // BUG-003 (rapport-qa.md, corrigé le 31 août 2026) : useSessionToken distingue "pas encore lu"
+  // (undefined) de "confirmé non connecté" (null) — élimine à la racine le risque qu'un
+  // utilisateur bien connecté se fasse rejeter par submit() s'il soumet très vite après le
+  // montage. Le formulaire reste volontairement saisissable avant résolution (voir le commentaire
+  // équivalent côté mobile) ; seul le bouton de soumission est désactivé le temps de savoir si
+  // `token` est réellement `null` ou une vraie session — voir plus bas.
+  const token = useSessionToken(webSessionStorage);
   const [terrain, setTerrain] = useState<Terrain | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-
-  useEffect(() => {
-    webSessionStorage.getToken().then(setToken);
-  }, []);
 
   const { sport, adresse, type, equipements, errors, submitting, submitError, setSport, setAdresse, setType, toggleEquipement, submit } =
     useCreateTerrainForm({
       apiBaseUrl: API_BASE_URL,
-      token,
+      token: token ?? null,
       onSuccess: setTerrain,
     });
 
   const { uploading, error: photoError, upload } = useTerrainPhotoUpload({
     apiBaseUrl: API_BASE_URL,
-    token,
+    token: token ?? null,
     onUploaded: (url) => setPhotoUrls((current) => [...current, url]),
   });
 
@@ -151,7 +154,7 @@ export function CreateTerrainForm() {
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || token === undefined}
         className="rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:opacity-50"
       >
         {submitting ? 'Publication en cours…' : "Publier l'annonce"}

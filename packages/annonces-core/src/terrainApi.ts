@@ -15,6 +15,7 @@ export async function createTerrain(
 ): Promise<Terrain> {
   const response = await fetch(`${apiBaseUrl}/api/terrains`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });
@@ -33,6 +34,7 @@ export async function createTerrain(
  */
 export async function fetchTerrain(terrainId: string, apiBaseUrl: string, token: string): Promise<Terrain> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/${terrainId}`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -51,6 +53,7 @@ export async function updateTerrain(
 ): Promise<Terrain> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/${terrainId}`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });
@@ -71,6 +74,7 @@ export async function updateTerrain(
 export async function deleteTerrain(terrainId: string, apiBaseUrl: string, token: string): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/${terrainId}`, {
     method: 'DELETE',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -93,6 +97,7 @@ export async function uploadTerrainPhoto(
 ): Promise<{ photoUrl: string }> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/${terrainId}/photos`, {
     method: 'POST',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });

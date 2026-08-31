@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useSessionToken } from '@app/auth-core';
 import { EQUIPEMENT_OPTIONS, useCreateTerrainForm, useTerrainPhotoUpload, type Terrain } from '@app/annonces-core';
 import { SPORT_OPTIONS } from '@app/shared';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
@@ -14,24 +15,26 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
  * session diffèrent.
  */
 export function CreateTerrainScreen() {
-  const [token, setToken] = useState<string | null>(null);
+  // BUG-003 (rapport-qa.md, corrigé le 31 août 2026) : useSessionToken distingue "pas encore lu"
+  // (undefined) de "confirmé non connecté" (null) — élimine à la racine le risque qu'un
+  // utilisateur bien connecté se fasse rejeter par submit() s'il soumet très vite après le
+  // montage. L'écran reste volontairement saisissable avant résolution ; seul le bouton de
+  // soumission est désactivé le temps de savoir si `token` est réellement `null` ou une vraie
+  // session — voir plus bas.
+  const token = useSessionToken(mobileSessionStorage);
   const [terrain, setTerrain] = useState<Terrain | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-
-  useEffect(() => {
-    mobileSessionStorage.getToken().then(setToken);
-  }, []);
 
   const { sport, adresse, type, equipements, errors, submitting, submitError, setSport, setAdresse, setType, toggleEquipement, submit } =
     useCreateTerrainForm({
       apiBaseUrl: API_BASE_URL,
-      token,
+      token: token ?? null,
       onSuccess: setTerrain,
     });
 
   const { uploading, error: photoError, upload } = useTerrainPhotoUpload({
     apiBaseUrl: API_BASE_URL,
-    token,
+    token: token ?? null,
     onUploaded: (url) => setPhotoUrls((current) => [...current, url]),
   });
 
@@ -170,7 +173,7 @@ export function CreateTerrainScreen() {
         accessibilityRole="button"
         accessibilityLabel="Publier l'annonce"
         onPress={() => void submit()}
-        disabled={submitting}
+        disabled={submitting || token === undefined}
         className="items-center rounded bg-blue-600 px-4 py-2 disabled:opacity-50"
       >
         {submitting ? (

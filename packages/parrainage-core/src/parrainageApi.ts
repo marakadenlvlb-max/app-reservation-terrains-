@@ -6,6 +6,7 @@ import type { ParrainageResume } from './types';
  */
 export async function fetchParrainageResume(apiBaseUrl: string, token: string): Promise<ParrainageResume> {
   const response = await fetch(`${apiBaseUrl}/api/parrainage`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -25,6 +26,7 @@ export async function fetchParrainageResume(apiBaseUrl: string, token: string): 
 export async function utiliserCodeParrainage(code: string, apiBaseUrl: string, token: string): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/api/parrainage/utiliser`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ code }),
   });

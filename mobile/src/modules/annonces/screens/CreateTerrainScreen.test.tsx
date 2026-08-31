@@ -37,13 +37,19 @@ const CREATED_TERRAIN = {
   photos: [] as string[],
 };
 
-function createFetchMock() {
+function createFetchMock(overrides: { createOk?: boolean; photoOk?: boolean } = {}) {
   return jest.fn((url: string) => {
     if (url.includes('/photos')) {
+      if (overrides.photoOk === false) {
+        return Promise.resolve({ ok: false, json: async () => null });
+      }
       return Promise.resolve({
         ok: true,
         json: async () => ({ photoUrl: 'https://cdn.example.com/terrain.jpg' }),
       });
+    }
+    if (overrides.createOk === false) {
+      return Promise.resolve({ ok: false, json: async () => null });
     }
     return Promise.resolve({ ok: true, json: async () => CREATED_TERRAIN });
   });
@@ -116,5 +122,58 @@ describe('CreateTerrainScreen', () => {
         expect.any(Object)
       )
     );
+  });
+
+  // TC-004-04 (rapport-qa.md) : ce cas existait côté web (CreateTerrainForm.test.tsx) mais pas
+  // côté mobile — écart de parité entre les deux suites relevé en session QA.
+  it("affiche une erreur si la publication échoue côté API", async () => {
+    global.fetch = createFetchMock({ createOk: false }) as unknown as typeof fetch;
+    render(<CreateTerrainScreen />);
+    await flushToken();
+
+    fireEvent.press(screen.getByLabelText('Tennis'));
+    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+
+    expect(await screen.findByText(/publication.*échoué/i)).toBeTruthy();
+  });
+
+  // TC-004-06 (rapport-qa.md) : seul le succès de l'upload était testé.
+  it("affiche une erreur si l'envoi de la photo échoue, sans bloquer l'écran", async () => {
+    global.fetch = createFetchMock({ photoOk: false }) as unknown as typeof fetch;
+    render(<CreateTerrainScreen />);
+    await flushToken();
+
+    fireEvent.press(screen.getByLabelText('Foot'));
+    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await screen.findByText(/annonce publiée/i);
+
+    fireEvent.press(screen.getByLabelText('Ajouter une photo'));
+
+    expect(await screen.findByText(/l'envoi de la photo a échoué/i)).toBeTruthy();
+    expect(screen.getByLabelText('Ajouter une photo')).toBeTruthy();
+  });
+
+  // TC-004-07 / BUG-003 (rapport-qa.md, corrigé le 31 août 2026) : une soumission avant la
+  // résolution du token ne doit plus jamais rejeter à tort un utilisateur réellement connecté.
+  it("désactive \"Publier l'annonce\" tant que le token de session n'est pas encore résolu", async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<CreateTerrainScreen />);
+    // Pas de flushToken() ici : c'est précisément le moment où BUG-003 provoquait un faux rejet.
+
+    fireEvent.press(screen.getByLabelText('Foot'));
+    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    expect(screen.getByLabelText("Publier l'annonce").props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    expect(screen.queryByText(/connecte-toi pour publier/i)).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // Une fois le token résolu (session bien valide), la publication doit fonctionner normalement.
+    await flushToken();
+    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+
+    expect(await screen.findByText(/annonce publiée/i)).toBeTruthy();
   });
 });

@@ -16,6 +16,7 @@ export async function creerNotation(
 ): Promise<Notation> {
   const response = await fetch(`${apiBaseUrl}/api/notations`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });

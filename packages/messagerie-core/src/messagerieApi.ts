@@ -11,6 +11,7 @@ export async function fetchMessages(
   token: string
 ): Promise<Message[]> {
   const response = await fetch(`${apiBaseUrl}/api/reservations/${reservationId}/messages`, {
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -29,6 +30,7 @@ export async function envoyerMessage(
 ): Promise<Message> {
   const response = await fetch(`${apiBaseUrl}/api/reservations/${reservationId}/messages`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ contenu }),
   });

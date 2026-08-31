@@ -312,6 +312,33 @@ erDiagram
 
 La couche Paiement expose une interface commune ("adaptateur de paiement") derrière laquelle chaque opérateur (Wave/Orange Money/Moov Money) est branché comme une implémentation spécifique — ça isole le reste de l'application des différences entre API des trois opérateurs et facilite l'ajout d'un futur moyen de paiement.
 
+> **Correction du 31 août 2026 (RNF-002)** : mécanisme de session **web** changé suite à un bug
+> remonté en session QA (`rapport-qa.md`, BUG-001) — le token de session était stocké en clair
+> dans `localStorage`, lisible par n'importe quel script JS de la page (ex. via une faille XSS
+> ailleurs dans l'app), ce qui ne satisfaisait pas "les données personnelles... chiffrées au
+> repos" (RNF-002).
+>
+> **Nouveau mécanisme web** : `POST /api/auth/login` continue de répondre avec le token en JSON
+> (nécessaire pour le mobile, voir plus bas) **et**, en plus, positionne un cookie de session
+> `HttpOnly; Secure; SameSite=Lax` via `Set-Cookie` — un cookie que JavaScript ne peut jamais lire
+> ni exfiltrer, contrairement à `localStorage`. Le frontend web ne persiste donc plus le token réel
+> nulle part : il ne conserve qu'un marqueur non sensible ("suis-je connecté ?") pour piloter
+> l'affichage, l'autorisation réelle de chaque requête se faisant via le cookie que le navigateur
+> attache automatiquement (`credentials: 'include'` sur tous les appels API authentifiés).
+> `POST /api/auth/logout` doit symétriquement invalider ce cookie côté serveur (`Set-Cookie` avec
+> expiration immédiate) — un cookie `HttpOnly` ne peut pas non plus être effacé par du JS.
+>
+> **Mobile inchangé** : `expo-secure-store` chiffre déjà le token au repos via le
+> Keychain/Keystore de l'OS (confirmé conforme à RNF-002 en session QA, cas TC-002-08) — React
+> Native n'a pas l'équivalent d'un cookie `HttpOnly` géré par un navigateur, donc le token réel
+> continue d'y être stocké explicitement et transmis en en-tête `Authorization: Bearer`.
+>
+> Impact code : tous les appels API authentifiés (tous les `*Api.ts` des packages `@app/*-core`)
+> ajoutent `credentials: 'include'` à leur `fetch()` pour que le cookie soit envoyé — le contrat
+> TypeScript (`token: string`, en-tête `Authorization`) ne change pas, seule sa valeur change côté
+> web (marqueur non sensible plutôt que secret réel), ce qui évite de retoucher la signature de
+> chaque fonction d'API. Voir `rapport-qa.md` (session du 31 août 2026) pour le détail du re-test.
+
 ## 5. Matrice de traçabilité
 
 | Choix d'architecture | Exigence(s) SRS couverte(s) |
@@ -339,3 +366,4 @@ La couche Paiement expose une interface commune ("adaptateur de paiement") derri
 | Entité PARRAINAGE + champ UTILISATEUR.code_parrainage *(ajoutés le 30 août 2026)* | RF-025 |
 | Intégration géolocalisation | RF-007 |
 | Intégration notifications | RF-020 |
+| Mécanisme de session web : cookie `HttpOnly` *(corrigé le 31 août 2026, suite à BUG-001)* | RNF-002 |

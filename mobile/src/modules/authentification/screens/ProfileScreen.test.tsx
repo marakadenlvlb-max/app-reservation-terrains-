@@ -98,4 +98,73 @@ describe('ProfileScreen', () => {
       )
     );
   });
+
+  // TC-003-05 (rapport-qa.md) : seul le nom était testé comme champ invalide ; le sport, lui
+  // aussi requis par validateProfilePayload, n'avait aucun cas dédié.
+  it('affiche une erreur de validation si tous les sports sont décochés', async () => {
+    global.fetch = createFetchMock() as unknown as typeof fetch;
+    render(<ProfileScreen />);
+
+    await screen.findByDisplayValue('Awa Diallo');
+    fireEvent.press(screen.getByLabelText('Foot')); // décoche l'unique sport déjà sélectionné
+    fireEvent.press(screen.getByLabelText('Enregistrer'));
+
+    expect(await screen.findByText(/sélectionne au moins un sport/i)).toBeTruthy();
+  });
+
+  // TC-003-06 (rapport-qa.md) : seul le succès du chargement était testé.
+  it('affiche une erreur bloquante si le chargement du profil échoue', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
+    render(<ProfileScreen />);
+
+    expect(await screen.findByText(/profil/i)).toBeTruthy();
+  });
+
+  // TC-003-07 (rapport-qa.md) : le code porte un commentaire explicite ("une fois chargé, une
+  // erreur ultérieure ne doit pas faire disparaître le formulaire") jamais vérifié par un test.
+  it('affiche une erreur de sauvegarde sans faire disparaître le formulaire déjà chargé', async () => {
+    global.fetch = jest.fn((url: string, options?: RequestInit) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, json: async () => ({ message: 'La mise à jour a échoué.' }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => PROFILE });
+    }) as unknown as typeof fetch;
+    render(<ProfileScreen />);
+
+    await screen.findByDisplayValue('Awa Diallo');
+    fireEvent.changeText(screen.getByLabelText('Ville'), 'Abidjan');
+    fireEvent.press(screen.getByLabelText('Enregistrer'));
+
+    expect(await screen.findByText(/mise à jour a échoué/i)).toBeTruthy();
+    expect(screen.getByDisplayValue('Abidjan')).toBeTruthy();
+  });
+
+  // TC-003-08 (rapport-qa.md) : seul le succès de l'upload était testé.
+  it("affiche une erreur si l'envoi de la photo échoue, sans bloquer le reste du formulaire", async () => {
+    global.fetch = jest.fn((url: string) => {
+      if (url.includes('/api/profile/photo')) {
+        return Promise.resolve({ ok: false, json: async () => ({ message: "L'envoi de la photo a échoué." }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => PROFILE });
+    }) as unknown as typeof fetch;
+    render(<ProfileScreen />);
+
+    await screen.findByDisplayValue('Awa Diallo');
+    fireEvent.press(screen.getByLabelText('Changer la photo de profil'));
+
+    expect(await screen.findByText(/l'envoi de la photo a échoué/i)).toBeTruthy();
+    expect(screen.getByDisplayValue('Awa Diallo')).toBeTruthy();
+  });
+
+  // TC-003-09 / BUG-002 (rapport-qa.md, corrigé le 31 août 2026) : un utilisateur déjà
+  // authentifié ne doit jamais voir "Connecte-toi..." s'afficher, même brièvement, au chargement.
+  it("n'affiche jamais le message de connexion pour un utilisateur déjà authentifié", async () => {
+    global.fetch = createFetchMock() as unknown as typeof fetch;
+    render(<ProfileScreen />);
+
+    expect(screen.queryByText(/connecte-toi/i)).toBeNull();
+
+    await screen.findByDisplayValue('Awa Diallo');
+    expect(screen.queryByText(/connecte-toi/i)).toBeNull();
+  });
 });

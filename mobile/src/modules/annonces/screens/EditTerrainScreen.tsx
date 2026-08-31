@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { useSessionToken } from '@app/auth-core';
 import { EQUIPEMENT_OPTIONS, useEditTerrainForm } from '@app/annonces-core';
 import { SPORT_OPTIONS } from '@app/shared';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
@@ -11,12 +12,11 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
  * même hook partagé (useEditTerrainForm).
  */
 export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
-  const [token, setToken] = useState<string | null>(null);
+  // BUG-005 (rapport-qa.md, corrigé le 31 août 2026) : quatrième occurrence du même défaut que
+  // BUG-002 — désormais éliminée à la racine via useSessionToken (packages/auth-core), qui
+  // distingue "pas encore lu" (undefined) de "confirmé non connecté" (null) une fois pour toutes.
+  const token = useSessionToken(mobileSessionStorage);
   const [deleted, setDeleted] = useState(false);
-
-  useEffect(() => {
-    mobileSessionStorage.getToken().then(setToken);
-  }, []);
 
   const {
     loading,
@@ -40,7 +40,7 @@ export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
   } = useEditTerrainForm({
     terrainId,
     apiBaseUrl: API_BASE_URL,
-    token,
+    token: token ?? null,
     onDeleted: () => setDeleted(true),
   });
 
@@ -61,7 +61,7 @@ export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
     );
   }
 
-  if (loading) {
+  if (token === undefined || loading) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator />
