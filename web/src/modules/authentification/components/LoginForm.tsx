@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useLoginForm } from '@app/auth-core';
 import { webSessionStorage } from '../sessionStorage';
 
@@ -9,14 +10,29 @@ import { webSessionStorage } from '../sessionStorage';
  * ce composant branche seulement l'UI web et le stockage de session propre au web.
  */
 export function LoginForm() {
+  // Confirmation visuelle locale au web (pas dans useLoginForm, partagé avec le mobile qui n'a pas
+  // ce besoin) : en l'absence de redirection post-connexion (routing pas encore défini, voir
+  // backlog.md), un login réussi ne changeait rien à l'écran — indiscernable d'un échec silencieux.
+  const [connecte, setConnecte] = useState(false);
+
   const { identifiant, motDePasse, errors, submitting, submitError, setIdentifiant, setMotDePasse, submit } =
     useLoginForm({
       apiBaseUrl: process.env.NEXT_PUBLIC_API_URL ?? '',
       sessionStorage: webSessionStorage,
       onSuccess: () => {
+        setConnecte(true);
         // TODO: rediriger vers le tableau de bord une fois le routing post-connexion défini.
       },
     });
+
+  if (connecte) {
+    return (
+      <div className="flex flex-col gap-2" role="status">
+        <h1 className="text-xl font-semibold">Connexion réussie ✓</h1>
+        <p className="text-sm text-gray-600">Vous êtes bien connecté(e) en tant que {identifiant}.</p>
+      </div>
+    );
+  }
 
   return (
     <form
