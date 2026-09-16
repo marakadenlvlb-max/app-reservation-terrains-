@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
 import { SPORT_OPTIONS, useRegisterForm } from '@app/auth-core';
 
 /**
@@ -7,6 +8,8 @@ import { SPORT_OPTIONS, useRegisterForm } from '@app/auth-core';
  * pour la validation et l'appel API, seule l'UI change entre les deux plateformes.
  */
 export function RegisterScreen() {
+  const router = useRouter();
+
   const {
     identifiant,
     motDePasse,
@@ -21,8 +24,10 @@ export function RegisterScreen() {
   } = useRegisterForm({
     apiBaseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
     onSuccess: () => {
-      // TODO: naviguer vers l'étape suivante (édition du profil, US-03) une fois le routing
-      // de l'app mobile défini.
+      // US-29 referme ce TODO, mais PAS vers /accueil (même raison qu'US-27/RegisterForm côté
+      // web) : `RegisterResult` (packages/auth-core/src/types.ts, partagé) ne renvoie aucun
+      // token — l'inscription seule ne crée pas de session. On redirige donc vers /connexion.
+      router.push('/connexion');
     },
   });
 
@@ -97,6 +102,11 @@ export function RegisterScreen() {
           <Text className="font-medium text-white">Créer mon compte</Text>
         )}
       </Pressable>
+
+      {/* US-29 : /connexion n'était atteignable depuis ici que via App.tsx codé en dur. */}
+      <Link href="/connexion" className="text-sm text-blue-600">
+        Déjà un compte ? Se connecter
+      </Link>
     </View>
   );
 }

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { pushMock } from '../../../testUtils/expoRouterMocks';
 import { ReserverCreneauBouton } from './ReserverCreneauBouton';
 
 const mockSecureStore = new Map<string, string>();
@@ -16,13 +17,19 @@ jest.mock('expo-secure-store', () => ({
 
 beforeEach(() => {
   mockSecureStore.clear();
+  pushMock.mockReset();
 });
 
 describe('ReserverCreneauBouton', () => {
-  it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
+  it("invite à se connecter si l'utilisateur n'a pas de session, avec un lien réel", async () => {
     render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    expect(await screen.findByText(/connecte-toi pour réserver/i)).toBeTruthy();
+    const lien = await screen.findByText(/connecte-toi pour réserver/i);
+    expect(lien).toBeTruthy();
+
+    // US-29 : ce texte n'était pas navigable avant (simple <Text>).
+    fireEvent.press(lien);
+    expect(pushMock).toHaveBeenCalledWith('/connexion');
   });
 
   it('verrouille le créneau et affiche un compte à rebours après réservation', async () => {

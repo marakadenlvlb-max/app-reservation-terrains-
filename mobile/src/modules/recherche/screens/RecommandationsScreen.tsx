@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { Link } from 'expo-router';
 import { useRecommandations, type TerrainRecommande } from '@app/recherche-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
 
@@ -56,13 +57,14 @@ export function RecommandationsScreen() {
         data={recommandations}
         keyExtractor={(item: TerrainRecommande) => item.terrainId}
         renderItem={({ item }) => (
-          <View className="mb-2 rounded border border-gray-200 px-3 py-2">
-            <Text className="font-medium">
-              {item.adresse} — {item.sport}
-            </Text>
-            <Text>À partir de {item.tarifMin}</Text>
-            {/* TODO: navigation vers l'écran de détail (US-08) une fois un routeur choisi. */}
-          </View>
+          <Link href={`/terrains/${item.terrainId}`} asChild>
+            <Pressable className="mb-2 rounded border border-gray-200 px-3 py-2">
+              <Text className="font-medium">
+                {item.adresse} — {item.sport}
+              </Text>
+              <Text>À partir de {item.tarifMin}</Text>
+            </Pressable>
+          </Link>
         )}
       />
     </View>

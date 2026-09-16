@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useLogout } from '@app/auth-core';
 import { mobileSessionStorage } from '../sessionStorage';
 
@@ -7,11 +8,14 @@ import { mobileSessionStorage } from '../sessionStorage';
  * l'implémentation du stockage de session change (expo-secure-store).
  */
 export function LogoutButton() {
+  const router = useRouter();
+
   const { loggingOut, logout } = useLogout({
     apiBaseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
     sessionStorage: mobileSessionStorage,
     onLoggedOut: () => {
-      // TODO: naviguer vers l'écran de connexion une fois le routing défini.
+      // US-29 (module Navigation & Interface globale) referme ce TODO.
+      router.replace('/connexion');
     },
   });
 

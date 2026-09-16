@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { pushMock } from '../../../testUtils/expoRouterMocks';
 import { HistoriqueScreen } from './HistoriqueScreen';
 
 const mockSecureStore = new Map<string, string>();
@@ -49,6 +50,7 @@ const RESERVATION_EN_ATTENTE = {
 beforeEach(() => {
   mockSecureStore.clear();
   mockSecureStore.set('auth_token', 'token-123');
+  pushMock.mockReset();
 });
 
 describe('HistoriqueScreen', () => {
@@ -72,6 +74,19 @@ describe('HistoriqueScreen', () => {
 
     await screen.findByText(/awa diallo/i);
     expect(screen.getAllByText(/noter cette session/i)).toHaveLength(1);
+  });
+
+  // US-29 : "Noter cette session" était un simple <Text>, sans navigation réelle.
+  it('navigue vers l\'écran de notation au clic sur "Noter cette session"', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [RESERVATION_PASSEE] })
+    ) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/moussa ba/i);
+    fireEvent.press(screen.getByText(/noter cette session/i));
+
+    expect(pushMock).toHaveBeenCalledWith('/reservations/reservation-2/noter/user-3');
   });
 
   it("affiche un message clair quand il n'y a encore aucune réservation", async () => {
@@ -105,6 +120,36 @@ describe('HistoriqueScreen', () => {
 
     await screen.findByText(/awa diallo/i);
     expect(screen.getAllByText(/envoyer un message/i)).toHaveLength(2);
+  });
+
+  // US-29 : "Envoyer un message" était un simple <Text>, sans navigation réelle.
+  it('navigue vers la conversation au clic sur "Envoyer un message"', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })
+    ) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    fireEvent.press(screen.getByText(/envoyer un message/i));
+
+    expect(pushMock).toHaveBeenCalledWith('/reservations/reservation-1/messages');
+  });
+
+  // US-29 : le tiroir ne pointe que vers /historique/joueur — ce lien croisé est le seul chemin
+  // restant vers /historique/proprietaire (et réciproquement), même décision que HistoriqueList (web).
+  it.each([
+    { role: 'joueur' as const, routeAttendue: '/historique/proprietaire' },
+    { role: 'proprietaire' as const, routeAttendue: '/historique/joueur' },
+  ])('propose un lien vers l\'autre vue pour le rôle $role', async ({ role, routeAttendue }) => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })
+    ) as unknown as typeof fetch;
+    render(<HistoriqueScreen role={role} />);
+
+    await screen.findByText(/awa diallo/i);
+    fireEvent.press(screen.getByText(/voir/i));
+
+    expect(pushMock).toHaveBeenCalledWith(routeAttendue);
   });
 
   it('propose "Annuler ma réservation" uniquement côté joueur pour une réservation confirmée à venir', async () => {

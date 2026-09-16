@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Link } from 'expo-router';
 import { useCountdown, useReservationStatus, useReserverCreneau, type Reservation } from '@app/reservation-core';
 import { OPERATEURS } from '@app/paiement-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
@@ -28,9 +29,11 @@ export function ReserverCreneauBouton({ creneauId }: { creneauId: string }) {
   }
 
   if (token === null) {
-    // TODO: naviguer vers l'écran de connexion une fois le routing mobile défini (même limite
-    // que les autres TODOs "routing" du projet).
-    return <Text className="text-sm text-blue-600">Connecte-toi pour réserver</Text>;
+    return (
+      <Link href="/connexion" className="text-sm text-blue-600">
+        Connecte-toi pour réserver
+      </Link>
+    );
   }
 
   if (reservation) {

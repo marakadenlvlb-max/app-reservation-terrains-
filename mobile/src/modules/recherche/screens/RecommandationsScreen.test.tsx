@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { pushMock } from '../../../testUtils/expoRouterMocks';
 import { RecommandationsScreen } from './RecommandationsScreen';
 
 const mockSecureStore = new Map<string, string>([['auth_token', 'token-123']]);
@@ -27,6 +28,7 @@ const TERRAIN_RECOMMANDE = {
 beforeEach(() => {
   mockSecureStore.clear();
   mockSecureStore.set('auth_token', 'token-123');
+  pushMock.mockReset();
 });
 
 describe('RecommandationsScreen', () => {
@@ -38,6 +40,19 @@ describe('RecommandationsScreen', () => {
 
     expect(await screen.findByText(/rue 12, dakar/i)).toBeTruthy();
     expect(screen.getByText(/12000/)).toBeTruthy();
+  });
+
+  // US-29 : chaque carte était un simple <View>, sans navigation réelle vers le détail (US-08).
+  it("navigue vers le détail du terrain au clic sur une recommandation", async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [TERRAIN_RECOMMANDE] })
+    ) as unknown as typeof fetch;
+    render(<RecommandationsScreen />);
+
+    await screen.findByText(/rue 12, dakar/i);
+    fireEvent.press(screen.getByText(/rue 12, dakar/i));
+
+    expect(pushMock).toHaveBeenCalledWith('/terrains/terrain-1');
   });
 
   it("affiche un message clair quand il n'y a encore aucune recommandation", async () => {

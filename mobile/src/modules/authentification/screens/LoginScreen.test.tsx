@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { pushMock, replaceMock } from '../../../testUtils/expoRouterMocks';
 import { LoginScreen } from './LoginScreen';
 
 // expo-secure-store s'appuie sur un module natif indisponible sous Jest : on le mocke avec une
@@ -20,6 +21,8 @@ const fetchMock = jest.fn();
 
 beforeEach(() => {
   fetchMock.mockReset();
+  pushMock.mockReset();
+  replaceMock.mockReset();
   global.fetch = fetchMock as unknown as typeof fetch;
   mockSecureStore.clear();
 });
@@ -48,6 +51,8 @@ describe('LoginScreen', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(mockSecureStore.get('auth_token')).toBe('abc123'));
+    // US-29 : redirection vers l'accueil post-connexion (referme le TODO qui vivait ici).
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/accueil'));
   });
 
   it('affiche un message générique si les identifiants sont incorrects', async () => {
@@ -60,6 +65,7 @@ describe('LoginScreen', () => {
 
     expect(await screen.findByText(/identifiant ou mot de passe incorrect/i)).toBeTruthy();
     expect(mockSecureStore.get('auth_token')).toBeUndefined();
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   // TC-002-06 (rapport-qa.md) : le test "formulaire vide" plus haut ne prouve que le cas "les
@@ -94,4 +100,13 @@ describe('LoginScreen', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     }
   );
+
+  // US-29 : /inscription n'était atteignable depuis ici que via App.tsx codé en dur.
+  it('propose un lien vers /inscription', () => {
+    render(<LoginScreen />);
+
+    fireEvent.press(screen.getByText(/créer un compte/i));
+
+    expect(pushMock).toHaveBeenCalledWith('/inscription');
+  });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { Link } from 'expo-router';
 import {
   estReservationAnnulable,
   estSessionTerminee,
@@ -29,10 +30,18 @@ const AUTRE_PARTIE_LABELS: Record<HistoriqueRole, string> = {
 };
 
 /**
+ * US-29 (module Navigation & Interface globale, équivalent mobile d'US-28) : le tiroir ne pointe
+ * que vers `/historique/joueur` (une seule entrée "Mes réservations" possible dans le menu) — ce
+ * lien croisé permet d'atteindre l'autre vue depuis ici, même décision que HistoriqueList (web).
+ */
+const AUTRE_VUE: Record<HistoriqueRole, { href: string; label: string }> = {
+  joueur: { href: '/historique/proprietaire', label: 'Voir les réservations reçues sur mes terrains' },
+  proprietaire: { href: '/historique/joueur', label: 'Voir mes réservations en tant que joueur' },
+};
+
+/**
  * Historique des réservations — US-18/US-19. Équivalent mobile de HistoriqueList (web), même
- * hook partagé (useHistorique). Le lien "Noter" est un simple texte (pas de navigation réelle,
- * pas de routeur en place) : TODO à câbler une fois un routeur choisi, comme les autres écrans
- * qui prennent leurs ids en props (voir NotationScreen).
+ * hook partagé (useHistorique).
  */
 export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -80,15 +89,23 @@ export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
 
   if (reservations.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center px-6">
+      <View className="flex-1 items-center justify-center gap-2 px-6">
         <Text className="text-sm text-gray-500">Aucune réservation pour l'instant.</Text>
+        <Link href={AUTRE_VUE[role].href} className="text-sm text-blue-600">
+          {AUTRE_VUE[role].label}
+        </Link>
       </View>
     );
   }
 
   return (
     <View className="flex-1 px-6 pt-16">
-      <Text className="mb-4 text-xl font-semibold">{TITRES[role]}</Text>
+      <View className="mb-4 flex-row items-center justify-between">
+        <Text className="text-xl font-semibold">{TITRES[role]}</Text>
+        <Link href={AUTRE_VUE[role].href} className="text-xs text-blue-600">
+          {AUTRE_VUE[role].label}
+        </Link>
+      </View>
       {annulerError && (
         <Text accessibilityRole="alert" className="mb-2 text-sm text-red-600">
           {annulerError}
@@ -112,12 +129,13 @@ export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
                 {AUTRE_PARTIE_LABELS[role]} : {item.autrePartie.nom} — {STATUT_LABELS[statut] ?? statut}
               </Text>
               {estSessionTerminee(effective) && (
-                // TODO: navigation vers NotationScreen({ reservationId: item.id, cibleId: item.autrePartie.id })
-                // une fois un routeur choisi — voir le même TODO ailleurs dans le projet.
-                <Text className="text-blue-600">Noter cette session</Text>
+                <Link href={`/reservations/${item.id}/noter/${item.autrePartie.id}`} className="text-blue-600">
+                  Noter cette session
+                </Link>
               )}
-              {/* TODO: navigation vers MessagerieScreen({ reservationId: item.id }) une fois un routeur choisi. */}
-              <Text className="text-blue-600">Envoyer un message</Text>
+              <Link href={`/reservations/${item.id}/messages`} className="text-blue-600">
+                Envoyer un message
+              </Link>
               {role === 'joueur' && estReservationAnnulable(effective) && (
                 <Pressable
                   accessibilityRole="button"

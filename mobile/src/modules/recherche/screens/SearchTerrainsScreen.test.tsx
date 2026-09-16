@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import * as Location from 'expo-location';
+import { pushMock } from '../../../testUtils/expoRouterMocks';
 import { SearchTerrainsScreen } from './SearchTerrainsScreen';
 
 jest.mock('expo-location', () => ({
@@ -45,6 +46,19 @@ describe('SearchTerrainsScreen', () => {
     expect(await screen.findByText(/rue 12, dakar/i)).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]).toHaveLength(1); // un seul argument (l'URL) : pas d'options avec un header Authorization
+  });
+
+  // US-29 : chaque résultat était un simple <View>, sans navigation réelle vers le détail (US-08).
+  it('navigue vers le détail du terrain au clic sur un résultat', async () => {
+    pushMock.mockReset();
+    global.fetch = createFetchMock() as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await screen.findByText(/rue 12, dakar/i);
+    fireEvent.press(screen.getByText(/rue 12, dakar/i));
+
+    expect(pushMock).toHaveBeenCalledWith('/terrains/terrain-1');
   });
 
   it('envoie le sport sélectionné dans la requête', async () => {

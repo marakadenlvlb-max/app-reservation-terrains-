@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { pushMock } from '../../../testUtils/expoRouterMocks';
 import { RegisterScreen } from './RegisterScreen';
 
 // Comme côté web, on mocke fetch plutôt que d'appeler un vrai backend : l'endpoint Laravel
@@ -7,6 +8,7 @@ const fetchMock = jest.fn();
 
 beforeEach(() => {
   fetchMock.mockReset();
+  pushMock.mockReset();
   global.fetch = fetchMock as unknown as typeof fetch;
 });
 
@@ -39,6 +41,8 @@ describe('RegisterScreen', () => {
       expect.stringContaining('/api/auth/register'),
       expect.objectContaining({ method: 'POST' })
     );
+    // US-29 : redirection vers /connexion (pas /accueil — l'inscription seule n'authentifie pas).
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/connexion'));
   });
 
   it("affiche une erreur si l'API refuse l'inscription (ex. identifiant déjà utilisé)", async () => {
@@ -54,6 +58,7 @@ describe('RegisterScreen', () => {
     fireEvent.press(screen.getByLabelText('Créer mon compte'));
 
     expect(await screen.findByText(/déjà utilisé/i)).toBeTruthy();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   // TC-001-03 (rapport-qa.md) : RF-001 accepte explicitement "email OU téléphone" comme
@@ -108,5 +113,14 @@ describe('RegisterScreen', () => {
     render(<RegisterScreen />);
 
     expect(screen.getByLabelText('Mot de passe').props.secureTextEntry).toBe(true);
+  });
+
+  // US-29 : /connexion n'était atteignable depuis ici que via App.tsx codé en dur.
+  it('propose un lien vers /connexion', () => {
+    render(<RegisterScreen />);
+
+    fireEvent.press(screen.getByText(/se connecter/i));
+
+    expect(pushMock).toHaveBeenCalledWith('/connexion');
   });
 });

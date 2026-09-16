@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
 import { useLoginForm } from '@app/auth-core';
 import { mobileSessionStorage } from '../sessionStorage';
 
@@ -8,12 +9,17 @@ import { mobileSessionStorage } from '../sessionStorage';
  * (expo-secure-store au lieu de localStorage).
  */
 export function LoginScreen() {
+  const router = useRouter();
+
   const { identifiant, motDePasse, errors, submitting, submitError, setIdentifiant, setMotDePasse, submit } =
     useLoginForm({
       apiBaseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
       sessionStorage: mobileSessionStorage,
       onSuccess: () => {
-        // TODO: naviguer vers le tableau de bord une fois le routing de l'app mobile défini.
+        // US-29 (module Navigation & Interface globale) referme le TODO qui vivait ici — même
+        // correctif qu'US-27 côté web : accueil unique combiné, pas d'aiguillage par rôle
+        // (UTILISATEUR n'a pas de champ `role`).
+        router.replace('/accueil');
       },
     });
 
@@ -60,6 +66,11 @@ export function LoginScreen() {
       >
         {submitting ? <ActivityIndicator color="#fff" /> : <Text className="font-medium text-white">Se connecter</Text>}
       </Pressable>
+
+      {/* US-29 : /inscription n'était atteignable depuis ici que via App.tsx codé en dur. */}
+      <Link href="/inscription" className="text-sm text-blue-600">
+        Pas encore de compte ? Créer un compte
+      </Link>
     </View>
   );
 }

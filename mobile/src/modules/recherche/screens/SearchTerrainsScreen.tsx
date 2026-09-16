@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { Link } from 'expo-router';
 import * as Location from 'expo-location';
 import { useRechercheTerrains, type RechercheResultat } from '@app/recherche-core';
 import { EQUIPEMENT_OPTIONS, SPORT_OPTIONS } from '@app/shared';
@@ -223,23 +224,24 @@ export function SearchTerrainsScreen() {
             data={resultats}
             keyExtractor={(item: RechercheResultat) => item.creneauId}
             renderItem={({ item }) => (
-              <View className="mt-2 rounded border border-gray-200 px-3 py-2">
-                <Text className="font-medium">
-                  {item.adresse} — {item.sport}
-                </Text>
-                <Text>
-                  {item.debut} → {item.fin} — {item.tarif}
-                  {item.distanceKm !== undefined ? ` — à ${item.distanceKm.toFixed(1)} km` : ''}
-                </Text>
-                {item.equipements.length > 0 && (
-                  <Text className="text-xs text-gray-500">
-                    {item.equipements
-                      .map((e) => EQUIPEMENT_OPTIONS.find((option) => option.value === e)?.label ?? e)
-                      .join(', ')}
+              <Link href={`/terrains/${item.terrainId}`} asChild>
+                <Pressable className="mt-2 rounded border border-gray-200 px-3 py-2">
+                  <Text className="font-medium">
+                    {item.adresse} — {item.sport}
                   </Text>
-                )}
-                {/* TODO: navigation vers l'écran de détail (US-08) une fois un routeur choisi. */}
-              </View>
+                  <Text>
+                    {item.debut} → {item.fin} — {item.tarif}
+                    {item.distanceKm !== undefined ? ` — à ${item.distanceKm.toFixed(1)} km` : ''}
+                  </Text>
+                  {item.equipements.length > 0 && (
+                    <Text className="text-xs text-gray-500">
+                      {item.equipements
+                        .map((e) => EQUIPEMENT_OPTIONS.find((option) => option.value === e)?.label ?? e)
+                        .join(', ')}
+                    </Text>
+                  )}
+                </Pressable>
+              </Link>
             )}
           />
         ))}
