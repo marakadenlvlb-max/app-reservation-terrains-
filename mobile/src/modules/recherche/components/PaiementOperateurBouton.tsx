@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { OPERATEUR_LABELS, useInitierPaiement, type Operateur } from '@app/paiement-core';
@@ -21,12 +22,27 @@ export function PaiementOperateurBouton({
   operateur: Operateur;
   token: string;
 }) {
-  const { initiating, initiateError, initier } = useInitierPaiement({ apiBaseUrl: API_BASE_URL, token });
+  const { initiating, initiateError, montantFacture, reductionParrainagePourcentage, initier } = useInitierPaiement({
+    apiBaseUrl: API_BASE_URL,
+    token,
+  });
+  // BUG-006 (rapport-qa.md, corrigé le 1 septembre 2026) : `WebBrowser.openBrowserAsync` était
+  // `await`é sans jamais être entouré d'un `try/catch` — s'il rejette (URL que l'app ne sait pas
+  // ouvrir, par exemple), la rejection n'était jamais rattrapée et l'utilisateur ne voyait aucun
+  // message, alors que le paiement est resté "initié" côté backend. `openError` est un état
+  // séparé de `initiateError` : ce n'est pas l'initiation qui a échoué, c'est l'ouverture, une
+  // fois l'URL déjà obtenue avec succès.
+  const [openError, setOpenError] = useState<string | null>(null);
 
   const handlePress = async () => {
+    setOpenError(null);
     const url = await initier(reservationId, operateur);
     if (url) {
-      await WebBrowser.openBrowserAsync(url);
+      try {
+        await WebBrowser.openBrowserAsync(url);
+      } catch {
+        setOpenError("Le paiement n'a pas pu s'ouvrir. Réessaie.");
+      }
     }
   };
 
@@ -48,6 +64,18 @@ export function PaiementOperateurBouton({
       {initiateError && (
         <Text accessibilityRole="alert" className="text-sm text-red-600">
           {initiateError}
+        </Text>
+      )}
+      {/* Transparence de la réduction de parrainage (rapport-qa.md, 9 septembre 2026) : sans ce
+          message, un parrain payait moins cher sans jamais pouvoir le constater dans l'app. */}
+      {reductionParrainagePourcentage !== null && montantFacture !== null && (
+        <Text className="text-sm text-green-700">
+          Réduction de parrainage de {reductionParrainagePourcentage}% appliquée — montant facturé : {montantFacture} FCFA.
+        </Text>
+      )}
+      {openError && (
+        <Text accessibilityRole="alert" className="text-sm text-red-600">
+          {openError}
         </Text>
       )}
     </View>

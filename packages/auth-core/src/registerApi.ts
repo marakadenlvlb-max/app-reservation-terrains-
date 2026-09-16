@@ -2,11 +2,8 @@ import type { RegisterPayload, RegisterResult } from './types';
 
 /**
  * Appel à l'API backend (Laravel, module Authentification & Profils — architecture.md section 2)
- * pour l'inscription — RF-001.
- *
- * TODO: endpoint backend à confirmer/implémenter côté Laravel. Le contrat ci-dessous est celui
- * attendu côté frontend ; à ajuster si le backend expose une forme de réponse différente une fois
- * réellement implémenté.
+ * pour l'inscription — RF-001. Endpoint implémenté et testé côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Authentification/AuthController.php`).
  *
  * `apiBaseUrl` est fourni par l'appelant plutôt que lu directement ici : web (Next.js) et mobile
  * (Expo) exposent leurs variables d'environnement publiques sous des préfixes différents

@@ -25,6 +25,8 @@ const TERRAIN = {
   type: null as string | null,
   equipements: [] as string[],
   photos: [] as string[],
+  paliers: [{ delaiMinutes: 1440, pourcentageRemboursement: 100 }],
+  fraisAnnulationPourcentage: 2,
 };
 
 function createFetchMock(overrides: { updateOk?: boolean; deleteOk?: boolean; loadOk?: boolean } = {}) {

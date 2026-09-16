@@ -2,9 +2,8 @@ import type { CreateCreneauPayload, Creneau, UpdateCreneauPayload } from './type
 
 /**
  * Appels à l'API backend (Laravel, module Annonces & Créneaux — architecture.md section 2) pour
- * la gestion des créneaux — RF-006.
- *
- * TODO: endpoints backend à confirmer/implémenter côté Laravel.
+ * la gestion des créneaux — RF-006. Endpoints implémentés et testés côté backend (skill
+ * dev-laravel, `backend/app/Http/Controllers/Api/Annonces/CreneauController.php`).
  */
 export async function fetchCreneaux(
   terrainId: string,

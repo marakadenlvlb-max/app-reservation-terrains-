@@ -3,6 +3,7 @@ import type { CreateTerrainPayload } from './types';
 export interface CreateTerrainValidationErrors {
   sport?: string;
   adresse?: string;
+  paliers?: string;
 }
 
 export function hasValidationErrors(errors: object): boolean {
@@ -13,6 +14,10 @@ export function hasValidationErrors(errors: object): boolean {
  * Validation de publication d'annonce (RF-004/RF-005). `sport` et `adresse` sont les deux seuls
  * champs vraiment indispensables pour qu'une annonce soit exploitable en recherche (RF-007) ;
  * `type` et `equipements` restent optionnels (voir le commentaire dans types.ts).
+ *
+ * RF-021 (correction du 9 septembre 2026) : `paliers` doit contenir au moins un élément — le
+ * backend refuse de toute façon la publication/modification sans (TerrainRequest), revérifié ici
+ * pour un retour immédiat plutôt que d'attendre l'aller-retour réseau.
  */
 export function validateCreateTerrainPayload(
   payload: CreateTerrainPayload
@@ -25,6 +30,10 @@ export function validateCreateTerrainPayload(
 
   if (!payload.adresse.trim()) {
     errors.adresse = "L'adresse est requise pour que les joueurs puissent te trouver.";
+  }
+
+  if (payload.paliers.length === 0) {
+    errors.paliers = "Configure au moins un palier d'annulation avant de publier ce terrain.";
   }
 
   return errors;

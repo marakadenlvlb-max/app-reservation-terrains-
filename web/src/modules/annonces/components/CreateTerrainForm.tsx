@@ -25,12 +25,30 @@ export function CreateTerrainForm() {
   const [terrain, setTerrain] = useState<Terrain | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
-  const { sport, adresse, type, equipements, errors, submitting, submitError, setSport, setAdresse, setType, toggleEquipement, submit } =
-    useCreateTerrainForm({
-      apiBaseUrl: API_BASE_URL,
-      token: token ?? null,
-      onSuccess: setTerrain,
-    });
+  const {
+    sport,
+    adresse,
+    type,
+    equipements,
+    paliers,
+    fraisAnnulationPourcentage,
+    errors,
+    submitting,
+    submitError,
+    setSport,
+    setAdresse,
+    setType,
+    toggleEquipement,
+    addPalier,
+    updatePalier,
+    removePalier,
+    setFraisAnnulationPourcentage,
+    submit,
+  } = useCreateTerrainForm({
+    apiBaseUrl: API_BASE_URL,
+    token: token ?? null,
+    onSuccess: setTerrain,
+  });
 
   const { uploading, error: photoError, upload } = useTerrainPhotoUpload({
     apiBaseUrl: API_BASE_URL,
@@ -145,6 +163,62 @@ export function CreateTerrainForm() {
           ))}
         </div>
       </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium">Politique d'annulation</legend>
+        <p className="text-xs text-gray-500">
+          Au moins un palier requis : délai minimum avant le créneau (en minutes) et pourcentage remboursé si le
+          joueur annule à ce délai ou plus.
+        </p>
+        {paliers.map((palier, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              aria-label={`Délai en minutes du palier ${index + 1}`}
+              value={palier.delaiMinutes}
+              onChange={(event) => updatePalier(index, { ...palier, delaiMinutes: Number(event.target.value) })}
+              className="w-24 rounded border border-gray-300 px-2 py-1"
+            />
+            <span className="text-sm">min avant →</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              aria-label={`Pourcentage remboursé du palier ${index + 1}`}
+              value={palier.pourcentageRemboursement}
+              onChange={(event) =>
+                updatePalier(index, { ...palier, pourcentageRemboursement: Number(event.target.value) })
+              }
+              className="w-20 rounded border border-gray-300 px-2 py-1"
+            />
+            <span className="text-sm">%</span>
+            <button type="button" onClick={() => removePalier(index)} className="text-sm text-red-600">
+              Retirer
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={addPalier} className="self-start text-sm text-blue-600">
+          + Ajouter un palier
+        </button>
+        {errors.paliers && <p className="text-sm text-red-600">{errors.paliers}</p>}
+      </fieldset>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="fraisAnnulation" className="text-sm font-medium">
+          Frais de transaction sur remboursement (optionnel)
+        </label>
+        <input
+          id="fraisAnnulation"
+          type="number"
+          min={0}
+          max={100}
+          value={fraisAnnulationPourcentage}
+          onChange={(event) => setFraisAnnulationPourcentage(event.target.value)}
+          placeholder="Laisse vide pour un taux par défaut selon ton nombre de terrains"
+          className="rounded border border-gray-300 px-3 py-2"
+        />
+      </div>
 
       {submitError && (
         <p role="alert" className="text-sm text-red-600">

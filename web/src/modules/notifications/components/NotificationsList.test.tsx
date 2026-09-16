@@ -70,4 +70,35 @@ describe('NotificationsList', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/connecte-toi/i);
   });
+
+  // TC-020-05 (rapport-qa.md) : le pattern testé pour les listes sœurs (historique, reversements)
+  // manquait pour les notifications elles-mêmes.
+  it('affiche une erreur si le chargement des notifications échoue', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, json: async () => null })));
+    render(<NotificationsList />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/impossible de charger tes notifications/i);
+  });
+
+  // TC-020-06 (rapport-qa.md) : comportement volontaire (useNotifications.ts) jamais verrouillé —
+  // un échec du marquage comme lue ne doit pas afficher d'erreur bruyante, la notification reste
+  // simplement affichée comme non lue.
+  it('laisse la notification affichée comme non lue si le marquage échoue, sans erreur bruyante', async () => {
+    vi.stubGlobal('fetch', (url: string, options?: RequestInit) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, json: async () => null });
+      }
+      return Promise.resolve({ ok: true, json: async () => [NOTIF_CONFIRMATION] });
+    });
+    const user = userEvent.setup();
+    render(<NotificationsList />);
+
+    await screen.findByText('Réservation confirmée');
+    await user.click(screen.getByRole('button', { name: /marquer comme lue/i }));
+
+    // Le bouton reste affiché : le marquage n'a pas abouti côté backend, donc la notification
+    // reste visible comme non lue (mise à jour optimiste annulée par l'échec).
+    expect(await screen.findByRole('button', { name: /marquer comme lue/i })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });

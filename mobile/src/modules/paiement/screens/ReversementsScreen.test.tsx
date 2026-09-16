@@ -26,6 +26,18 @@ const REVERSEMENT_EFFECTUE = {
   dateReversement: '2026-08-28T09:00:00Z',
 };
 
+const REVERSEMENT_EN_ATTENTE = {
+  paiementId: 'paiement-2',
+  reservationId: 'reservation-2',
+  operateur: 'orange_money',
+  montant: 20000,
+  commission: 2000,
+  montantNet: 18000,
+  statutReversement: 'en_attente',
+  datePaiement: '2026-08-30T10:00:00Z',
+  dateReversement: null as string | null,
+};
+
 beforeEach(() => {
   mockSecureStore.clear();
 });
@@ -54,5 +66,25 @@ describe('ReversementsScreen', () => {
     render(<ReversementsScreen />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
+  });
+
+  // TC-015-04 (rapport-qa.md) : ce cas existait côté web mais pas côté mobile — écart de parité.
+  it('affiche une erreur si le chargement échoue', async () => {
+    mockSecureStore.set('auth_token', 'token-123');
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
+    render(<ReversementsScreen />);
+
+    expect(await screen.findByText(/impossible de charger/i)).toBeTruthy();
+  });
+
+  // TC-015-06 (rapport-qa.md) : aucun test mobile n'utilisait de reversement `en_attente`.
+  it('affiche la date de paiement en repli quand le reversement est encore en attente', async () => {
+    mockSecureStore.set('auth_token', 'token-123');
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [REVERSEMENT_EN_ATTENTE] })
+    ) as unknown as typeof fetch;
+    render(<ReversementsScreen />);
+
+    expect(await screen.findByText(/2026-08-30T10:00:00Z/)).toBeTruthy();
   });
 });

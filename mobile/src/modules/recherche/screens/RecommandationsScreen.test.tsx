@@ -53,4 +53,13 @@ describe('RecommandationsScreen', () => {
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
+
+  // TC-025-04 (rapport-qa.md) : le pattern testé pour les listes sœurs (historique, reversements,
+  // notifications, messagerie) manquait pour les recommandations elles-mêmes.
+  it('affiche une erreur si le chargement des recommandations échoue', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
+    render(<RecommandationsScreen />);
+
+    expect(await screen.findByText(/impossible de charger tes recommandations/i)).toBeTruthy();
+  });
 });

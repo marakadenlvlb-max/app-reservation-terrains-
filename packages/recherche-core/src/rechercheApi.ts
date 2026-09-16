@@ -4,8 +4,11 @@ import type { RechercheFiltres, RechercheResultat, TerrainDetail } from './types
  * Appels à l'API backend (Laravel, module Recherche & Catalogue — architecture.md section 2)
  * pour la recherche (RF-007/RF-008/US-09) et la consultation d'une annonce (RF-009/US-08).
  *
- * TODO: endpoints backend à confirmer/implémenter côté Laravel (dont le géocodage/tri par
- * proximité via PostGIS, RF-007).
+ * Endpoints implémentés et testés côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Recherche/`). Le tri par proximité (RF-007) calcule
+ * finalement la distance via la formule de Haversine côté application plutôt que par une requête
+ * PostGIS — voir la correction du 9 septembre 2026 dans `architecture.md` section 4 pour le
+ * détail (aucune colonne géométrique PostGIS dans le modèle de données, tests sur SQLite).
  *
  * Volontairement **sans** `token` : contrairement aux modules Authentification et Annonces, la
  * recherche et la consultation d'une annonce sont des fonctionnalités publiques — un visiteur non

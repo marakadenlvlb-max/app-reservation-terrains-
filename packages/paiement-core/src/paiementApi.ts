@@ -5,8 +5,13 @@ import type { InitierPaiementResult, Operateur, Reversement } from './types';
  * paiement — RF-011 (Wave, US-12). Même endpoint pour les futurs opérateurs (US-13/US-14) : seul
  * `operateur` change, cohérent avec l'adaptateur de paiement commun décrit dans l'architecture.
  *
- * TODO: endpoint backend à confirmer/implémenter côté Laravel, ainsi que le webhook de
- * confirmation asynchrone qu'il reçoit de Wave (architecture.md section 4).
+ * Endpoint implémenté et testé côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Paiement/PaiementController.php`), y compris le webhook de
+ * confirmation asynchrone qui bascule la réservation vers 'confirmee' (RF-014). **Limite
+ * signalée** : aucun identifiant/sandbox Wave/Orange Money/Moov Money n'est disponible dans
+ * l'environnement de développement — les trois adaptateurs backend fonctionnent en mode
+ * simulation (voir `backend/config/paiement.php`), le `checkoutUrl` renvoyé ne pointe donc pas
+ * vers une vraie page de paiement tant qu'une vraie intégration n'est pas branchée.
  */
 export async function initierPaiement(
   reservationId: string,
@@ -35,7 +40,12 @@ export async function initierPaiement(
  * reversement lui-même est un processus automatique côté backend selon un cycle défini, ce
  * frontend ne fait que consulter son état, jamais le déclencher.
  *
- * TODO: endpoint backend à confirmer/implémenter côté Laravel.
+ * Endpoint implémenté et testé côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Paiement/ReversementController.php`). **Limite signalée** :
+ * RF-015 ne fixe ni taux de commission ni cycle de reversement — `commission`/`montantNet`/
+ * `dateReversement` restent `null` tant qu'une vraie décision métier n'existe pas (arbitrage du
+ * 9 septembre 2026, plutôt qu'un chiffre inventé sur l'argent dû aux propriétaires) ;
+ * `statutReversement` vaut systématiquement `'en_attente'` pour la même raison.
  */
 export async function fetchReversements(apiBaseUrl: string, token: string): Promise<Reversement[]> {
   const response = await fetch(`${apiBaseUrl}/api/reversements`, {

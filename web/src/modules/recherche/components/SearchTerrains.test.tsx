@@ -62,6 +62,22 @@ describe('SearchTerrains', () => {
     expect(url).toContain('date=2026-09-01');
   });
 
+  // TC-007-06 (rapport-qa.md) : `heure` existe dans le hook et le composant mais n'était vérifié
+  // par aucun test, sur aucune des deux plateformes.
+  it("envoie l'heure sélectionnée dans la requête", async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<SearchTerrains />);
+
+    fireEvent.change(screen.getByLabelText(/^heure$/i), { target: { value: '18:00' } });
+    await user.click(screen.getByRole('button', { name: /rechercher/i }));
+
+    await screen.findByText(/rue 12, dakar/i);
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain('heure=18%3A00');
+  });
+
   it("affiche un message clair quand aucun créneau ne correspond", async () => {
     vi.stubGlobal('fetch', createFetchMock({ results: [] }));
     const user = userEvent.setup();
@@ -131,6 +147,31 @@ describe('SearchTerrains', () => {
     expect(url).toContain('equipements=vestiaires%2Ceclairage');
   });
 
+  // TC-023-04 (rapport-qa.md) : `toggleEquipement` a une branche "désélectionner" symétrique
+  // (`prev.filter(...)`) jamais exercée jusqu'ici — seul le fait de cocher était testé.
+  it('retire un équipement décoché de la sélection et de la requête envoyée', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<SearchTerrains />);
+
+    const vestiaires = screen.getByRole('checkbox', { name: /vestiaires/i });
+    const eclairage = screen.getByRole('checkbox', { name: /éclairage/i });
+    await user.click(vestiaires);
+    await user.click(eclairage);
+    // On décoche vestiaires : seul éclairage doit rester sélectionné et envoyé.
+    await user.click(vestiaires);
+    expect(vestiaires).not.toBeChecked();
+    expect(eclairage).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: /rechercher/i }));
+
+    await screen.findByText(/rue 12, dakar/i);
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain('equipements=eclairage');
+    expect(url).not.toContain('vestiaires');
+  });
+
   it('désactive le filtre de distance max tant que la position GPS n\'est pas connue', async () => {
     render(<SearchTerrains />);
 
@@ -161,6 +202,39 @@ describe('SearchTerrains', () => {
 
     const [url] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
     expect(url).toContain('distanceMaxKm=5');
+  });
+
+  // TC-009-03 (rapport-qa.md) : aucun test n'exerçait le cas "géolocalisation indisponible".
+  it("affiche un message clair quand la géolocalisation n'est pas disponible sur l'appareil", async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('navigator', { ...navigator, geolocation: undefined });
+    const user = userEvent.setup();
+    render(<SearchTerrains />);
+
+    await user.click(screen.getByRole('button', { name: /trier par proximité/i }));
+
+    expect(await screen.findByText(/géolocalisation n'est pas disponible/i)).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // TC-009-04 (rapport-qa.md) : aucun test n'exerçait l'échec/refus de l'acquisition de position.
+  it("affiche un message clair quand l'acquisition de la position échoue", async () => {
+    vi.stubGlobal('fetch', createFetchMock());
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      geolocation: {
+        getCurrentPosition: (_success: PositionCallback, error: PositionErrorCallback) => {
+          error({ code: 1, message: 'User denied geolocation' } as GeolocationPositionError);
+        },
+      },
+    });
+    const user = userEvent.setup();
+    render(<SearchTerrains />);
+
+    await user.click(screen.getByRole('button', { name: /trier par proximité/i }));
+
+    expect(await screen.findByText(/impossible de récupérer ta position/i)).toBeInTheDocument();
   });
 
   it('affiche les équipements du terrain quand le backend les renvoie', async () => {

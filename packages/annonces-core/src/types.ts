@@ -18,11 +18,32 @@ import type { Equipement, Sport } from '@app/shared';
  */
 export type { Equipement } from '@app/shared';
 
+/**
+ * RF-021 (correction du 9 septembre 2026) : la politique d'annulation d'un terrain n'est plus un
+ * seuil unique décidé par l'application — chaque propriétaire/gestionnaire configure ses propres
+ * paliers, illimités, par terrain. `delaiMinutes` : en dessous de ce délai (en minutes avant le
+ * début du créneau), ce palier ne s'applique plus au profit d'un palier plus strict (ou d'aucun
+ * remboursement si aucun palier n'est respecté) — voir `estReservationAnnulable` côté
+ * historique-core pour la seule condition vérifiée côté frontend (créneau pas encore commencé).
+ */
+export interface PalierAnnulation {
+  delaiMinutes: number;
+  pourcentageRemboursement: number;
+}
+
 export interface CreateTerrainPayload {
   sport: Sport;
   adresse: string;
   type?: string;
   equipements: Equipement[];
+  /** Au moins un palier requis (RF-021) : le backend refuse la publication/modification sans. */
+  paliers: PalierAnnulation[];
+  /**
+   * Frais de transaction déduits d'un remboursement, propres à ce terrain — `undefined`/`null`
+   * laisse le backend calculer un taux par défaut selon le nombre de terrains du propriétaire
+   * (et l'en avertit par notification), une valeur fixe le taux explicitement.
+   */
+  fraisAnnulationPourcentage?: number | null;
 }
 
 /**
@@ -43,6 +64,8 @@ export interface Terrain {
   type: string | null;
   equipements: Equipement[];
   photos: string[];
+  paliers: PalierAnnulation[];
+  fraisAnnulationPourcentage: number;
 }
 
 /**

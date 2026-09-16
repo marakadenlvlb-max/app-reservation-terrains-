@@ -2,11 +2,10 @@ import type { CreateTerrainPayload, Terrain, UpdateTerrainPayload } from './type
 
 /**
  * Appels à l'API backend (Laravel, module Annonces & Créneaux — architecture.md section 2) pour
- * la publication d'une annonce — RF-004/RF-005.
- *
- * TODO: endpoint backend à confirmer/implémenter côté Laravel. Le géocodage de `adresse` en
- * latitude/longitude (architecture.md section 4 — intégration géolocalisation) est fait côté
- * backend ; le frontend n'envoie que l'adresse en texte.
+ * la publication d'une annonce — RF-004/RF-005. Endpoint implémenté et testé côté backend (skill
+ * dev-laravel, `backend/app/Http/Controllers/Api/Annonces/TerrainController.php`). Le géocodage
+ * de `adresse` en latitude/longitude (via OpenStreetMap Nominatim) est fait côté backend ; le
+ * frontend n'envoie que l'adresse en texte.
  */
 export async function createTerrain(
   payload: CreateTerrainPayload,
@@ -29,8 +28,8 @@ export async function createTerrain(
 }
 
 /**
- * US-06 : chargement, modification et retrait d'une annonce déjà publiée. Même TODO backend que
- * `createTerrain` ci-dessus.
+ * US-06 : chargement, modification et retrait d'une annonce déjà publiée. Restreint côté backend
+ * au propriétaire de l'annonce (403 sinon).
  */
 export async function fetchTerrain(terrainId: string, apiBaseUrl: string, token: string): Promise<Terrain> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/${terrainId}`, {

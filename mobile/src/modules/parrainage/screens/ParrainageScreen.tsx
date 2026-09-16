@@ -8,6 +8,10 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 const STATUT_LABELS: Record<string, string> = {
   en_attente: 'En attente',
   valide: 'Avantage accordé',
+  // BUG-008 (rapport-qa.md, corrigé le 9 septembre 2026) : le backend introduit 'utilise' une
+  // fois la réduction consommée (voir InitierPaiement, module Paiement) — absent ici jusqu'à
+  // présent, la valeur brute fuyait telle quelle dans l'UI.
+  utilise: 'Avantage utilisé',
 };
 
 /**
@@ -71,7 +75,9 @@ export function ParrainageScreen() {
               <Text className="font-medium">{item.nom}</Text>
               <Text className="text-gray-600">
                 {STATUT_LABELS[item.statut] ?? item.statut}
-                {item.avantage ? ` — ${item.avantage}` : ''}
+                {/* BUG-008 : une fois consommé, `avantage` ("... sur ta prochaine réservation")
+                    redevient trompeur rétrospectivement — le statut "Avantage utilisé" suffit. */}
+                {item.avantage && item.statut !== 'utilise' ? ` — ${item.avantage}` : ''}
               </Text>
             </View>
           )}

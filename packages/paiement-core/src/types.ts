@@ -24,10 +24,19 @@ export const OPERATEURS: Operateur[] = ['wave', 'orange_money', 'moov_money'];
  * d'architecture "endpoint webhook pour confirmation asynchrone" : le frontend n'apprend jamais
  * directement si le paiement a réussi, seulement où envoyer l'utilisateur pour payer — la
  * confirmation elle-même arrive par polling de la réservation (US-11), pas via ce retour.
+ *
+ * `montant`/`reductionParrainagePourcentage` : ajoutés le 9 septembre 2026 (point de transparence
+ * signalé en session QA, rapport-qa.md) — un joueur dont le paiement bénéficie d'une réduction de
+ * parrainage (US-26) n'avait auparavant aucun moyen de le constater dans l'app. `montant` reflète
+ * ce qui est réellement facturé (net de la réduction le cas échéant) ; `reductionParrainagePourcentage`
+ * vaut `null` quand aucune réduction n'a été appliquée, jamais `0` (qui laisserait croire à une
+ * réduction nulle plutôt qu'à une absence de réduction).
  */
 export interface InitierPaiementResult {
   paiementId: string;
   checkoutUrl: string;
+  montant: number;
+  reductionParrainagePourcentage: number | null;
 }
 
 /**

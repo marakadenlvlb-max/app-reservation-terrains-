@@ -39,4 +39,13 @@ describe('RecommandationsList', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/connecte-toi/i);
   });
+
+  // TC-025-04 (rapport-qa.md) : le pattern testé pour les listes sœurs (historique, reversements,
+  // notifications, messagerie) manquait pour les recommandations elles-mêmes.
+  it('affiche une erreur si le chargement des recommandations échoue', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, json: async () => null })));
+    render(<RecommandationsList />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/impossible de charger tes recommandations/i);
+  });
 });

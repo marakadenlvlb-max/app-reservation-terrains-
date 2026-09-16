@@ -30,7 +30,18 @@ export function NotificationsScreen() {
     token: token ?? null,
   });
 
-  usePushRegistration({ apiBaseUrl: API_BASE_URL, token: token ?? null });
+  const { registerError } = usePushRegistration({ apiBaseUrl: API_BASE_URL, token: token ?? null });
+
+  // Signalé en QA (rapport-qa.md) : `registerError` était auparavant ignoré — un échec
+  // d'enregistrement du jeton push restait invisible, alors même que c'est le seul canal qui
+  // permet à un rappel (US-21) d'atteindre l'utilisateur hors de l'application. Affiché comme un
+  // avertissement non bloquant plutôt qu'un rôle "alert" : le journal in-app (US-20) reste
+  // consultable normalement, ce n'est pas une erreur qui empêche l'écran de fonctionner.
+  const avertissementPush = registerError ? (
+    <Text className="mb-2 text-xs text-orange-600">
+      Impossible d'activer les notifications push sur cet appareil : {registerError}
+    </Text>
+  ) : null;
 
   if (token === undefined || loading) {
     return (
@@ -43,6 +54,7 @@ export function NotificationsScreen() {
   if (error && notifications.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6">
+        {avertissementPush}
         <Text accessibilityRole="alert" className="text-sm text-red-600">
           {error}
         </Text>
@@ -53,6 +65,7 @@ export function NotificationsScreen() {
   if (notifications.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6">
+        {avertissementPush}
         <Text className="text-sm text-gray-500">Aucune notification pour l'instant.</Text>
       </View>
     );
@@ -61,6 +74,7 @@ export function NotificationsScreen() {
   return (
     <View className="flex-1 px-6 pt-16">
       <Text className="mb-4 text-xl font-semibold">Mes notifications</Text>
+      {avertissementPush}
       <FlatList
         data={notifications}
         keyExtractor={(item: Notification) => item.id}

@@ -88,6 +88,99 @@ describe('ReserverCreneauBouton', () => {
     expect(await screen.findByText(/réservation confirmée/i)).toBeTruthy();
   });
 
+  // TC-010-04 (rapport-qa.md) : tous les tests existants utilisaient un `expireA` dans le futur.
+  it('affiche un message clair quand le délai de verrouillage a expiré', async () => {
+    mockSecureStore.set('auth_token', 'token-123');
+    // Expiré depuis 1 seconde : dans la marge de grâce du polling (useReservationStatus.ts),
+    // donc le statut reste 'en_attente_paiement' comme le renverrait réellement le backend dans
+    // cette fenêtre — c'est useCountdown (basé sur l'horloge, pas sur le statut) qui doit
+    // détecter l'expiration côté UI.
+    const expireA = new Date(Date.now() - 1000).toISOString();
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({
+          id: 'reservation-1',
+          creneauId: 'creneau-1',
+          joueurId: 'user-1',
+          statut: 'en_attente_paiement',
+          montant: 15000,
+          createdAt: new Date().toISOString(),
+          expireA,
+        }),
+      })
+    ) as unknown as typeof fetch;
+    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+
+    fireEvent.press(await screen.findByLabelText('Réserver'));
+
+    expect(await screen.findByText(/délai a expiré/i)).toBeTruthy();
+  });
+
+  // TC-010-05 (rapport-qa.md) : la désactivation du bouton pendant l'appel n'était jamais vérifiée.
+  it('désactive le bouton "Réserver" pendant que la réservation est en cours', async () => {
+    mockSecureStore.set('auth_token', 'token-123');
+    let resolveFetch: (value: unknown) => void = () => {};
+    const pending = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    global.fetch = jest.fn(() => pending) as unknown as typeof fetch;
+    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+
+    fireEvent.press(await screen.findByLabelText('Réserver'));
+
+    const bouton = await screen.findByLabelText('Réserver');
+    expect(bouton.props.accessibilityState.disabled).toBe(true);
+
+    // Résout la promesse et attend la retombée du re-rendu qui en découle.
+    resolveFetch({
+      ok: true,
+      json: async () => ({
+        id: 'reservation-1',
+        creneauId: 'creneau-1',
+        joueurId: 'user-1',
+        statut: 'en_attente_paiement',
+        montant: 15000,
+        createdAt: new Date().toISOString(),
+        expireA: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      }),
+    });
+    await screen.findByText(/créneau verrouillé/i);
+  });
+
+  // TC-011-03 (rapport-qa.md, US-11 / RF-014) : aucun test n'exerçait un échec du polling
+  // lui-même (distinct d'un paiement refusé, où le backend répond `ok: true` avec statut
+  // 'annulee') — ici c'est l'appel de vérification qui échoue techniquement.
+  it('affiche une erreur de polling sans faire disparaître le compte à rebours', async () => {
+    mockSecureStore.set('auth_token', 'token-123');
+    const expireA = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    let callCount = 0;
+    global.fetch = jest.fn(() => {
+      callCount += 1;
+      if (callCount === 1) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            id: 'reservation-1',
+            creneauId: 'creneau-1',
+            joueurId: 'user-1',
+            statut: 'en_attente_paiement',
+            montant: 15000,
+            createdAt: new Date().toISOString(),
+            expireA,
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false, json: async () => null });
+    }) as unknown as typeof fetch;
+    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+
+    fireEvent.press(await screen.findByLabelText('Réserver'));
+
+    expect(await screen.findByText(/créneau verrouillé/i)).toBeTruthy();
+    expect(await screen.findByText(/impossible de vérifier le statut/i)).toBeTruthy();
+  });
+
   it('affiche un message clair si la réservation est annulée (paiement refusé)', async () => {
     mockSecureStore.set('auth_token', 'token-123');
     const expireA = new Date(Date.now() + 10 * 60 * 1000).toISOString();

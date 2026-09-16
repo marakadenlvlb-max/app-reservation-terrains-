@@ -25,6 +25,8 @@ export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
     adresse,
     type,
     equipements,
+    paliers,
+    fraisAnnulationPourcentage,
     errors,
     saving,
     saveError,
@@ -35,6 +37,11 @@ export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
     setAdresse,
     setType,
     toggleEquipement,
+    addPalier,
+    updatePalier,
+    removePalier,
+    setFraisAnnulationPourcentage,
+    reinitialiserFraisAnnulation,
     save,
     remove,
   } = useEditTerrainForm({
@@ -148,6 +155,59 @@ export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
               </Pressable>
             );
           })}
+        </View>
+      </View>
+
+      <View className="gap-2">
+        <Text className="text-sm font-medium">Politique d'annulation</Text>
+        <Text className="text-xs text-gray-500">
+          Au moins un palier requis : délai minimum avant le créneau (en minutes) et pourcentage remboursé si le
+          joueur annule à ce délai ou plus.
+        </Text>
+        {paliers.map((palier, index) => (
+          <View key={index} className="flex-row items-center gap-2">
+            <TextInput
+              accessibilityLabel={`Délai en minutes du palier ${index + 1}`}
+              keyboardType="numeric"
+              value={String(palier.delaiMinutes)}
+              onChangeText={(value) => updatePalier(index, { ...palier, delaiMinutes: Number(value) || 0 })}
+              className="w-20 rounded border border-gray-300 px-2 py-1"
+            />
+            <Text className="text-sm">min avant →</Text>
+            <TextInput
+              accessibilityLabel={`Pourcentage remboursé du palier ${index + 1}`}
+              keyboardType="numeric"
+              value={String(palier.pourcentageRemboursement)}
+              onChangeText={(value) =>
+                updatePalier(index, { ...palier, pourcentageRemboursement: Number(value) || 0 })
+              }
+              className="w-16 rounded border border-gray-300 px-2 py-1"
+            />
+            <Text className="text-sm">%</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Retirer le palier ${index + 1}`} onPress={() => removePalier(index)}>
+              <Text className="text-sm text-red-600">Retirer</Text>
+            </Pressable>
+          </View>
+        ))}
+        <Pressable accessibilityRole="button" accessibilityLabel="Ajouter un palier" onPress={addPalier}>
+          <Text className="text-sm text-blue-600">+ Ajouter un palier</Text>
+        </Pressable>
+        {errors.paliers && <Text className="text-sm text-red-600">{errors.paliers}</Text>}
+      </View>
+
+      <View className="gap-1">
+        <Text className="text-sm font-medium">Frais de transaction sur remboursement</Text>
+        <View className="flex-row items-center gap-2">
+          <TextInput
+            accessibilityLabel="Frais de transaction sur remboursement"
+            keyboardType="numeric"
+            value={fraisAnnulationPourcentage}
+            onChangeText={setFraisAnnulationPourcentage}
+            className="rounded border border-gray-300 px-3 py-2"
+          />
+          <Pressable accessibilityRole="button" accessibilityLabel="Revenir au taux par défaut" onPress={reinitialiserFraisAnnulation}>
+            <Text className="text-sm text-blue-600">Revenir au taux par défaut</Text>
+          </Pressable>
         </View>
       </View>
 

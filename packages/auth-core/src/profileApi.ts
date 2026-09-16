@@ -2,10 +2,8 @@ import type { Profile, UpdateProfilePayload } from './types';
 
 /**
  * Appels à l'API backend (Laravel, module Authentification & Profils — architecture.md
- * section 2) pour l'édition du profil — RF-003.
- *
- * TODO: endpoints backend à confirmer/implémenter côté Laravel. Les contrats ci-dessous sont
- * ceux attendus côté frontend ; à ajuster une fois réellement implémentés.
+ * section 2) pour l'édition du profil — RF-003. Endpoints implémentés et testés côté backend
+ * (skill dev-laravel, `backend/app/Http/Controllers/Api/Authentification/ProfilController.php`).
  */
 export async function fetchProfile(apiBaseUrl: string, token: string): Promise<Profile> {
   const response = await fetch(`${apiBaseUrl}/api/profile`, {

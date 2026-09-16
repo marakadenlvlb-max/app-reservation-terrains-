@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import * as Location from 'expo-location';
 import { SearchTerrainsScreen } from './SearchTerrainsScreen';
 
 jest.mock('expo-location', () => ({
@@ -58,6 +59,46 @@ describe('SearchTerrainsScreen', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('sport=foot');
   });
 
+  // TC-007-04 (rapport-qa.md) : ce cas existait côté web (dans un test combiné avec sport+date)
+  // mais pas côté mobile — écart de parité relevé en session QA.
+  it('envoie la localisation saisie dans la requête', async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.changeText(screen.getByLabelText('Localisation'), 'Dakar');
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+
+    await screen.findByText(/rue 12, dakar/i);
+    expect(fetchMock.mock.calls[0][0]).toContain('localisation=Dakar');
+  });
+
+  // TC-007-05 (rapport-qa.md) : même écart de parité pour la date.
+  it('envoie la date saisie dans la requête', async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.changeText(screen.getByLabelText('Date'), '2026-09-01');
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+
+    await screen.findByText(/rue 12, dakar/i);
+    expect(fetchMock.mock.calls[0][0]).toContain('date=2026-09-01');
+  });
+
+  // TC-007-06 (rapport-qa.md) : `heure` n'était vérifiée sur aucune des deux plateformes.
+  it("envoie l'heure saisie dans la requête", async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.changeText(screen.getByLabelText('Heure'), '18:00');
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+
+    await screen.findByText(/rue 12, dakar/i);
+    expect(fetchMock.mock.calls[0][0]).toContain('heure=18%3A00');
+  });
+
   it('affiche un message clair quand aucun créneau ne correspond', async () => {
     global.fetch = createFetchMock({ results: [] }) as unknown as typeof fetch;
     render(<SearchTerrainsScreen />);
@@ -112,6 +153,29 @@ describe('SearchTerrainsScreen', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('equipements=vestiaires%2Ceclairage');
   });
 
+  // TC-023-04 (rapport-qa.md) : `toggleEquipement` a une branche "désélectionner" symétrique
+  // (`prev.filter(...)`) jamais exercée jusqu'ici — seul le fait de cocher était testé.
+  it('retire un équipement décoché de la sélection et de la requête envoyée', async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<SearchTerrainsScreen />);
+
+    const vestiaires = screen.getByLabelText('Vestiaires');
+    const eclairage = screen.getByLabelText('Éclairage');
+    fireEvent.press(vestiaires);
+    fireEvent.press(eclairage);
+    // On décoche vestiaires : seul éclairage doit rester sélectionné et envoyé.
+    fireEvent.press(vestiaires);
+    expect(screen.getByLabelText('Vestiaires').props.accessibilityState.checked).toBe(false);
+    expect(screen.getByLabelText('Éclairage').props.accessibilityState.checked).toBe(true);
+
+    fireEvent.press(screen.getByLabelText('Rechercher'));
+
+    await screen.findByText(/rue 12, dakar/i);
+    expect(fetchMock.mock.calls[0][0]).toContain('equipements=eclairage');
+    expect(fetchMock.mock.calls[0][0]).not.toContain('vestiaires');
+  });
+
   it("désactive le filtre de distance max tant que la position GPS n'est pas connue, puis l'active une fois acquise", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -130,6 +194,30 @@ describe('SearchTerrainsScreen', () => {
     await screen.findByText(/rue 12, dakar/i);
     const dernierAppel = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
     expect(dernierAppel[0]).toContain('distanceMaxKm=5');
+  });
+
+  // TC-009-05 (rapport-qa.md) : aucun test n'exerçait le refus de la permission de localisation.
+  it('affiche un message clair quand la permission de localisation est refusée', async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValueOnce({ granted: false });
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.press(screen.getByLabelText('Trier par proximité'));
+
+    expect(await screen.findByText(/autorise la localisation/i)).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // TC-009-06 (rapport-qa.md) : aucun test n'exerçait un échec inattendu de l'acquisition (ex. GPS désactivé).
+  it("affiche un message clair quand l'acquisition de la position échoue de façon inattendue", async () => {
+    global.fetch = createFetchMock() as unknown as typeof fetch;
+    (Location.getCurrentPositionAsync as jest.Mock).mockRejectedValueOnce(new Error('GPS indisponible'));
+    render(<SearchTerrainsScreen />);
+
+    fireEvent.press(screen.getByLabelText('Trier par proximité'));
+
+    expect(await screen.findByText(/impossible de récupérer ta position/i)).toBeTruthy();
   });
 
   it('affiche les équipements du terrain quand le backend les renvoie', async () => {

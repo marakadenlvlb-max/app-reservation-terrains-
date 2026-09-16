@@ -2,15 +2,14 @@ import type { LoginPayload, LoginResult } from './types';
 
 /**
  * Appel à l'API backend (Laravel, module Authentification & Profils — architecture.md section 2)
- * pour la connexion — RF-002.
- *
- * TODO: endpoint backend à confirmer/implémenter côté Laravel. Contrat attendu : un token de
- * session (ex. Sanctum) dans le corps JSON (utilisé tel quel par le mobile, voir
- * `mobileSessionStorage`) **et**, depuis la correction RNF-002 du 31 août 2026 (BUG-001,
- * `rapport-qa.md`), un cookie `Set-Cookie: ...; HttpOnly; Secure; SameSite=Lax` sur la même
- * réponse — c'est ce cookie, invisible en JS, que `webSessionStorage` utilise réellement côté
- * web (voir sa doc). `credentials: 'include'` est nécessaire ici pour que le navigateur accepte
- * de mémoriser ce cookie.
+ * pour la connexion — RF-002. Endpoint implémenté et testé côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Authentification/AuthController.php`) : un token de session
+ * (Sanctum) dans le corps JSON (utilisé tel quel par le mobile, voir `mobileSessionStorage`)
+ * **et**, depuis la correction RNF-002 du 31 août 2026 (BUG-001, `rapport-qa.md`), un cookie
+ * `Set-Cookie: ...; HttpOnly; Secure; SameSite=Lax` sur la même réponse — c'est ce cookie,
+ * invisible en JS, que `webSessionStorage` utilise réellement côté web (voir sa doc).
+ * `credentials: 'include'` est nécessaire ici pour que le navigateur accepte de mémoriser ce
+ * cookie.
  */
 export async function loginUser(payload: LoginPayload, apiBaseUrl: string): Promise<LoginResult> {
   const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
@@ -31,9 +30,10 @@ export async function loginUser(payload: LoginPayload, apiBaseUrl: string): Prom
 }
 
 /**
- * TODO: endpoint backend à confirmer/implémenter côté Laravel — invalide le token côté serveur.
- * RF-002. L'appelant (useLogout) efface la session locale même si cet appel échoue : un backend
- * injoignable ne doit pas empêcher l'utilisateur de se déconnecter sur son propre appareil.
+ * RF-002 — Invalide la session/le jeton côté serveur. Endpoint implémenté et testé côté backend
+ * (skill dev-laravel, AuthController::logout). L'appelant (useLogout) efface la session locale
+ * même si cet appel échoue : un backend injoignable ne doit pas empêcher l'utilisateur de se
+ * déconnecter sur son propre appareil.
  *
  * `credentials: 'include'` (ajouté le 31 août 2026, BUG-001) : nécessaire côté web pour que le
  * cookie `HttpOnly` de session soit envoyé — c'est ce qui permet au backend de savoir QUEL cookie

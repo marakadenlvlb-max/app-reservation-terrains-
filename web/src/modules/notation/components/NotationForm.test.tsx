@@ -75,4 +75,65 @@ describe('NotationForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/envoi de la notation a échoué/i);
   });
+
+  // TC-016-05 (rapport-qa.md) : le pattern standard testé partout ailleurs dans le projet
+  // manquait pour cet écran précis.
+  it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
+    window.localStorage.clear();
+    render(<NotationForm reservationId="reservation-1" cibleId="user-2" />);
+
+    expect(await screen.findByText(/connecte-toi pour laisser une note/i)).toBeInTheDocument();
+  });
+
+  // TC-016-06 (rapport-qa.md) : le seul test d'envoi réussi incluait toujours un commentaire —
+  // RF-016 précise pourtant "commentaire optionnel".
+  it('envoie la notation sans commentaire (champ réellement optionnel)', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<NotationForm reservationId="reservation-1" cibleId="user-2" />);
+
+    await user.click(await screen.findByRole('radio', { name: '5' }));
+    await user.click(screen.getByRole('button', { name: /envoyer ma note/i }));
+
+    expect(await screen.findByText(/note a bien été enregistrée/i)).toBeInTheDocument();
+    // `commentaire.trim() || undefined` (useNoterSession.ts) : un commentaire vide est omis du
+    // payload plutôt qu'envoyé comme chaîne vide ou `null` — JSON.stringify élimine les clés
+    // `undefined`, donc "commentaire" n'apparaît pas du tout dans le corps envoyé.
+    const postCall = fetchMock.mock.calls.find(([, options]) => (options as RequestInit)?.method === 'POST');
+    expect(postCall?.[1]?.body).not.toContain('commentaire');
+  });
+
+  // TC-016-07 (rapport-qa.md) : la désactivation du bouton pendant l'appel n'était jamais vérifiée.
+  it("désactive le bouton \"Envoyer ma note\" pendant que l'envoi est en cours", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    const pending = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    const noteMoyenneFetch = createFetchMock();
+    vi.stubGlobal('fetch', (url: string, options?: RequestInit) =>
+      options?.method === 'POST' ? pending : noteMoyenneFetch(url, options)
+    );
+    const user = userEvent.setup();
+    render(<NotationForm reservationId="reservation-1" cibleId="user-2" />);
+
+    await user.click(await screen.findByRole('radio', { name: '5' }));
+    await user.click(screen.getByRole('button', { name: /envoyer ma note/i }));
+
+    expect(await screen.findByRole('button', { name: /^envoi…$/i })).toBeDisabled();
+
+    resolveFetch({
+      ok: true,
+      json: async () => ({
+        id: 'notation-1',
+        reservationId: 'reservation-1',
+        auteurId: 'user-1',
+        cibleId: 'user-2',
+        note: 5,
+        commentaire: null,
+        createdAt: '2026-08-30T10:00:00Z',
+      }),
+    });
+    await screen.findByText(/note a bien été enregistrée/i);
+  });
 });

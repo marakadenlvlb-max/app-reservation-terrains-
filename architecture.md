@@ -137,8 +137,10 @@ erDiagram
     UTILISATEUR ||--o{ RESERVATION : reserve
     UTILISATEUR ||--o{ NOTATION : redige
     TERRAIN ||--o{ CRENEAU : propose
+    TERRAIN ||--o{ PALIER_ANNULATION : definit
     CRENEAU ||--o| RESERVATION : occupe
     RESERVATION ||--|| PAIEMENT : genere
+    PAIEMENT ||--o| PARRAINAGE : consomme
     RESERVATION ||--o{ NOTATION : declenche
     UTILISATEUR ||--o{ NOTIFICATION : recoit
     RESERVATION ||--o{ NOTIFICATION : declenche
@@ -170,6 +172,13 @@ erDiagram
         string type
         json equipements
         json photos
+        decimal frais_annulation_pourcentage
+    }
+    PALIER_ANNULATION {
+        uuid id
+        uuid terrain_id
+        int delai_minutes
+        decimal pourcentage_remboursement
     }
     CRENEAU {
         uuid id
@@ -232,6 +241,8 @@ erDiagram
         uuid filleul_id
         string statut
         string avantage
+        decimal reduction_pourcentage
+        uuid paiement_id
         datetime created_at
     }
 ```
@@ -300,6 +311,50 @@ erDiagram
 > `UTILISATEUR.sports_pratiques`, anticipé par la note de correction du 29 août 2026 ci-dessus) —
 > c'est un endpoint de lecture dérivée, pas une nouvelle donnée à persister.
 
+> **Correction du 9 septembre 2026 (RF-025, implémentation de US-26)** : ajout à l'entité
+> PARRAINAGE de `reduction_pourcentage` et `paiement_id`. RF-025 ("suivre les bénéfices associés")
+> ne précisait ni le bénéficiaire de l'avantage, ni sa nature exacte, ni la condition d'activation
+> — trois décisions explicitement tranchées par le porteur de projet plutôt que devinées :
+> l'avantage profite au **parrain** (pas au filleul), il s'active **immédiatement** dès que le
+> filleul utilise le code (pas de délai/condition supplémentaire, donc pas d'usage réel de l'état
+> `'en_attente'` dans cette implémentation malgré sa présence dans `StatutParrainage`), et il
+> réduit **réellement** le montant du prochain paiement du parrain plutôt que de rester une simple
+> mention informative — d'où le besoin d'un taux numérique capturé par ligne (`reduction_pourcentage`,
+> pour ne pas modifier rétroactivement une récompense déjà accordée si le taux change plus tard) et
+> d'une référence vers le paiement qui l'a consommée (`paiement_id`, à usage unique). Le taux par
+> défaut (10%) reste explicitement provisoire (`config/parrainage.php`) — aucune base réelle dans
+> le SRS. Impact sur le module Paiement : `InitierPaiement` applique la réduction avant de créer la
+> ligne PAIEMENT (`Paiement.montant` reflète alors ce qui est réellement facturé, pas
+> `Reservation.montant` qui reste le tarif plein du créneau).
+
+> **Correction du 9 septembre 2026** : ajout de l'entité PALIER_ANNULATION (terrain_id,
+> delai_minutes, pourcentage_remboursement) et du champ `TERRAIN.frais_annulation_pourcentage`.
+> RF-021 ("une politique de délai définie") a été précisé par le porteur de projet : ce n'est pas
+> un seuil unique décidé par l'application, mais une politique **entièrement configurable par
+> chaque propriétaire/gestionnaire, par terrain**, sous forme de paliers illimités (délai avant le
+> début du créneau → pourcentage remboursé). Modélisé comme une entité séparée plutôt qu'un champ
+> JSON sur TERRAIN (contrairement à `equipements`/`photos`/`sports_pratiques`) : contrairement à
+> ces listes de valeurs fermées, un palier a une structure propre (deux nombres) qu'il est utile
+> de valider/interroger individuellement (ex. trouver le palier applicable à un remboursement),
+> et leur nombre est illimité par construction — un tableau de lignes reste la modélisation la
+> plus honnête. **Nouvelle contrainte sur la publication d'une annonce (RF-004/RF-005)** :
+> `POST /api/terrains` exige désormais au moins un palier dans la même requête ; il n'existe
+> aujourd'hui aucun état brouillon/publié sur TERRAIN (créer = publier), donc la contrainte se
+> vérifie à la création plutôt que via un nouveau statut — décision explicite du porteur de projet
+> plutôt qu'un contournement inventé pour éviter de retravailler le modèle plus largement.
+>
+> `TERRAIN.frais_annulation_pourcentage` (distinct des paliers ci-dessus) représente les frais de
+> transaction déduits d'un remboursement — individuels par terrain, pas globaux au propriétaire.
+> Sa valeur par défaut suit un barème dégressif fourni par le porteur de projet (nombre de
+> terrains détenus par le propriétaire → taux, voir `backend/config/reservation.php`),
+> explicitement qualifié de **provisoire** (aucun taux réel négocié avec Wave/Orange Money/Moov
+> Money) : le propriétaire peut le remplacer par sa propre valeur à tout moment. Ce taux est
+> attribué et figé au moment de la création du terrain (pas recalculé silencieusement à chaque
+> remboursement si le nombre de terrains du propriétaire change ensuite) et déclenche l'envoi
+> d'une NOTIFICATION (entité existante, RF-020) au propriétaire l'informant du taux qui lui a été
+> attribué — uniquement quand la valeur par défaut est utilisée, jamais pour un taux saisi
+> explicitement par le propriétaire (qui le connaît déjà puisqu'il vient de le choisir).
+
 ## 4. Choix d'intégration
 
 | Intégration | Utilisée par (module) | Détails techniques | Exigence(s) source |
@@ -311,6 +366,20 @@ erDiagram
 | Service de notifications (push type Firebase Cloud Messaging + email/SMS) | Module Notifications | Envoi de la confirmation de réservation et du rappel avant créneau | RF-020 |
 
 La couche Paiement expose une interface commune ("adaptateur de paiement") derrière laquelle chaque opérateur (Wave/Orange Money/Moov Money) est branché comme une implémentation spécifique — ça isole le reste de l'application des différences entre API des trois opérateurs et facilite l'ajout d'un futur moyen de paiement.
+
+> **Correction du 9 septembre 2026 (RF-007, implémentation de US-07/US-09)** : le calcul de
+> distance pour le tri par proximité n'utilise finalement **pas** de requête spatiale PostGIS
+> (`ST_Distance`), contrairement à ce que cette section annonçait. Deux raisons concrètes,
+> découvertes en implémentant la recherche : `TERRAIN` ne stocke que `latitude`/`longitude` en
+> `float` (aucune colonne géométrique PostGIS n'a jamais été ajoutée au modèle de données), et la
+> suite de tests tourne sur SQLite en mémoire (`phpunit.xml`), qui n'a aucune extension spatiale —
+> une requête PostGIS n'aurait donc jamais pu être vérifiée par un test réel dans cet
+> environnement. La distance est calculée via la formule de Haversine en PHP
+> (`RechercherTerrains::distanceKm()`), après avoir appliqué les autres filtres en base — un choix
+> portable et honnêtement testable, au prix de calculer la distance sur l'ensemble déjà filtré
+> plutôt que dans la requête SQL elle-même (acceptable tant que le catalogue reste de taille
+> modeste ; à revisiter avec une vraie colonne géométrique + PostGIS si le volume de terrains
+> grossit significativement). Le géocodage à la publication (Nominatim) reste inchangé.
 
 > **Correction du 31 août 2026 (RNF-002)** : mécanisme de session **web** changé suite à un bug
 > remonté en session QA (`rapport-qa.md`, BUG-001) — le token de session était stocké en clair
@@ -364,6 +433,8 @@ La couche Paiement expose une interface commune ("adaptateur de paiement") derri
 | Entité NOTIFICATION + champ UTILISATEUR.push_tokens *(ajoutés le 30 août 2026)* | RF-020 |
 | Entité MESSAGE *(ajoutée le 30 août 2026)* | RF-023 |
 | Entité PARRAINAGE + champ UTILISATEUR.code_parrainage *(ajoutés le 30 août 2026)* | RF-025 |
+| Entité PALIER_ANNULATION + champ TERRAIN.frais_annulation_pourcentage *(ajoutés le 9 septembre 2026)* | RF-021, RF-004, RF-005 |
+| Champs PARRAINAGE.reduction_pourcentage/paiement_id *(ajoutés le 9 septembre 2026)* | RF-025, RF-011, RF-012, RF-013 |
 | Intégration géolocalisation | RF-007 |
 | Intégration notifications | RF-020 |
 | Mécanisme de session web : cookie `HttpOnly` *(corrigé le 31 août 2026, suite à BUG-001)* | RNF-002 |

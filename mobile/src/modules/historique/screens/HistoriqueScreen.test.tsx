@@ -34,6 +34,18 @@ const RESERVATION_PASSEE = {
   autrePartie: { id: 'user-3', nom: 'Moussa Ba' },
 };
 
+// Créneau futur mais statut non confirmé — isole la moitié du ET logique de
+// `estReservationAnnulable` que RESERVATION_PASSEE (statut confirmé, créneau passé) ne couvre pas.
+const RESERVATION_EN_ATTENTE = {
+  id: 'reservation-3',
+  statut: 'en_attente_paiement',
+  montant: 10000,
+  createdAt: '2026-08-22T10:00:00Z',
+  terrain: { id: 'terrain-3', sport: 'basket', adresse: 'Boulevard 3, Dakar' },
+  creneau: { id: 'creneau-3', debut: '2099-09-02T18:00:00Z', fin: '2099-09-02T19:00:00Z' },
+  autrePartie: { id: 'user-4', nom: 'Fatou Sow' },
+};
+
 beforeEach(() => {
   mockSecureStore.clear();
   mockSecureStore.set('auth_token', 'token-123');
@@ -76,6 +88,15 @@ describe('HistoriqueScreen', () => {
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
 
+  // TC-018-05 (rapport-qa.md) : le pattern testé pour les listes sœurs (ReversementsList,
+  // notifications) manquait pour l'historique lui-même.
+  it("affiche une erreur si le chargement de l'historique échoue", async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    expect(await screen.findByText(/impossible de charger ton historique/i)).toBeTruthy();
+  });
+
   it('propose "Envoyer un message" pour chaque réservation, quel que soit son statut (US-24 / RF-023)', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] })
@@ -104,6 +125,20 @@ describe('HistoriqueScreen', () => {
     expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull();
   });
 
+  // TC-019-02 (rapport-qa.md) : RF-019 vise explicitement "voir qui a réservé... et quand... afin
+  // de suivre son activité et ses revenus" — jusqu'ici seul le nom brut de l'autre partie servait
+  // d'ancrage `findByText`, jamais l'étiquette, le créneau ou le montant.
+  it('affiche qui a réservé (étiquette + nom), quand (créneau) et le montant (RF-019)', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })
+    ) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="proprietaire" />);
+
+    expect(await screen.findByText(/joueur\s*:\s*awa diallo/i)).toBeTruthy();
+    expect(screen.getByText(/2099-09-01T18:00:00Z/)).toBeTruthy();
+    expect(screen.getByText(/15000/)).toBeTruthy();
+  });
+
   it('annule une réservation et affiche le message renvoyé par le backend (US-22 / RF-021)', async () => {
     global.fetch = jest.fn((url: string, options?: RequestInit) => {
       if (options?.method === 'POST' && typeof url === 'string' && url.includes('/annulation')) {
@@ -120,6 +155,86 @@ describe('HistoriqueScreen', () => {
     fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
 
     expect(await screen.findByText(/remboursement en cours via wave/i)).toBeTruthy();
+    await waitFor(() => expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull());
+  });
+
+  // TC-022-04 (rapport-qa.md) : l'échec de l'annulation côté backend n'était jamais exercé.
+  it("affiche une erreur et laisse la réservation inchangée si l'annulation échoue", async () => {
+    global.fetch = jest.fn((url: string, options?: RequestInit) => {
+      if (options?.method === 'POST' && typeof url === 'string' && url.includes('/annulation')) {
+        return Promise.resolve({ ok: false, json: async () => ({ message: "L'annulation a échoué." }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
+    }) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+
+    expect(await screen.findByText(/l'annulation a échoué/i)).toBeTruthy();
+    // La réservation reste inchangée : toujours "Confirmée", bouton toujours disponible.
+    expect(screen.getByText(/confirmée/i)).toBeTruthy();
+    expect(screen.getByLabelText(/annuler ma réservation/i)).toBeTruthy();
+  });
+
+  // TC-022-05 (rapport-qa.md) : la désactivation du bouton pendant l'appel n'était jamais vérifiée.
+  it("désactive le bouton \"Annuler ma réservation\" pendant que l'annulation est en cours", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    const pending = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    global.fetch = jest.fn((url: string, options?: RequestInit) => {
+      if (options?.method === 'POST' && typeof url === 'string' && url.includes('/annulation')) {
+        return pending;
+      }
+      return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
+    }) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+
+    const bouton = await screen.findByLabelText(/annuler ma réservation/i);
+    expect(bouton.props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText(/annulation en cours/i)).toBeTruthy();
+
+    resolveFetch({
+      ok: true,
+      json: async () => ({ rembourse: true, message: 'Remboursement en cours via Wave sous 48h.' }),
+    });
+    await screen.findByText(/remboursement en cours via wave/i);
+  });
+
+  // TC-022-06 (rapport-qa.md) : seule la moitié droite (créneau futur/passé) du ET logique de
+  // `estReservationAnnulable` était isolée par un test — pas la moitié gauche (statut confirmé).
+  it("ne propose pas l'annulation pour une réservation non confirmée, même à créneau futur", async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, json: async () => [RESERVATION_EN_ATTENTE] })
+    ) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/fatou sow/i);
+    expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull();
+  });
+
+  // TC-022-07 (rapport-qa.md) : RF-021 ne déclenche un remboursement que "si l'annulation
+  // respecte" le délai — le seul scénario de succès testé jusqu'ici remboursait systématiquement.
+  it('affiche le message du backend et annule la réservation même sans remboursement (rembourse: false)', async () => {
+    global.fetch = jest.fn((url: string, options?: RequestInit) => {
+      if (options?.method === 'POST' && typeof url === 'string' && url.includes('/annulation')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ rembourse: false, message: 'Annulation actée, hors délai : aucun remboursement.' }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
+    }) as unknown as typeof fetch;
+    render(<HistoriqueScreen role="joueur" />);
+
+    await screen.findByText(/awa diallo/i);
+    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+
+    expect(await screen.findByText(/aucun remboursement/i)).toBeTruthy();
     await waitFor(() => expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull());
   });
 });

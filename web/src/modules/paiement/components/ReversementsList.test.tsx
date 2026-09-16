@@ -64,4 +64,13 @@ describe('ReversementsList', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/connecte-toi/i);
   });
+
+  // TC-015-06 (rapport-qa.md) : REVERSEMENT_EN_ATTENTE était déjà utilisé dans le premier test
+  // mais la colonne date n'y était jamais vérifiée pour cette ligne précise.
+  it('affiche la date de paiement en repli quand le reversement est encore en attente', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, json: async () => [REVERSEMENT_EN_ATTENTE] })));
+    render(<ReversementsList />);
+
+    expect(await screen.findByText(/2026-08-30 10:00:00Z/)).toBeInTheDocument();
+  });
 });

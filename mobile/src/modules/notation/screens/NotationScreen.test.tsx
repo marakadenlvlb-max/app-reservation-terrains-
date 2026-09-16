@@ -80,4 +80,62 @@ describe('NotationScreen', () => {
 
     expect(await screen.findByText(/envoi de la notation a échoué/i)).toBeTruthy();
   });
+
+  // TC-016-05 (rapport-qa.md) : le pattern standard testé partout ailleurs dans le projet
+  // manquait pour cet écran précis.
+  it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
+    mockSecureStore.clear();
+    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+
+    expect(await screen.findByText(/connecte-toi pour laisser une note/i)).toBeTruthy();
+  });
+
+  // TC-016-06 (rapport-qa.md) : le seul test d'envoi réussi incluait toujours un commentaire —
+  // RF-016 précise pourtant "commentaire optionnel".
+  it('envoie la notation sans commentaire (champ réellement optionnel)', async () => {
+    const fetchMock = createFetchMock();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+
+    fireEvent.press(await screen.findByLabelText('5'));
+    fireEvent.press(screen.getByLabelText('Envoyer ma note'));
+
+    expect(await screen.findByText(/note a bien été enregistrée/i)).toBeTruthy();
+    // `commentaire.trim() || undefined` (useNoterSession.ts) : JSON.stringify élimine la clé
+    // "commentaire" du payload plutôt que de l'envoyer comme chaîne vide ou `null`.
+    const postCall = fetchMock.mock.calls.find(([, options]) => (options as RequestInit)?.method === 'POST');
+    expect(postCall?.[1]?.body).not.toContain('commentaire');
+  });
+
+  // TC-016-07 (rapport-qa.md) : la désactivation du bouton pendant l'appel n'était jamais vérifiée.
+  it("désactive le bouton \"Envoyer ma note\" pendant que l'envoi est en cours", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    const pending = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    const noteMoyenneFetch = createFetchMock();
+    global.fetch = ((url: string, options?: RequestInit) =>
+      options?.method === 'POST' ? pending : noteMoyenneFetch(url, options)) as unknown as typeof fetch;
+    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+
+    fireEvent.press(await screen.findByLabelText('5'));
+    fireEvent.press(screen.getByLabelText('Envoyer ma note'));
+
+    const bouton = await screen.findByLabelText('Envoyer ma note');
+    expect(bouton.props.accessibilityState.disabled).toBe(true);
+
+    resolveFetch({
+      ok: true,
+      json: async () => ({
+        id: 'notation-1',
+        reservationId: 'reservation-1',
+        auteurId: 'user-1',
+        cibleId: 'user-2',
+        note: 5,
+        commentaire: null,
+        createdAt: '2026-08-30T10:00:00Z',
+      }),
+    });
+    await screen.findByText(/note a bien été enregistrée/i);
+  });
 });

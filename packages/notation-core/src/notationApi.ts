@@ -2,12 +2,10 @@ import type { CreateNotationPayload, Notation, NoteMoyenne } from './types';
 
 /**
  * Appels à l'API backend (Laravel, module Notation & Réputation — architecture.md section 2)
- * — RF-016 (création) et RF-017 (note moyenne).
- *
- * TODO: endpoints backend à confirmer/implémenter côté Laravel. Le backend doit vérifier que
- * `auteurId` (déduit du token) et `cibleId` étaient bien tous deux parties à `reservationId`
- * avant d'accepter la notation — ce n'est pas au frontend de faire confiance à ses propres
- * paramètres pour une vérification aussi sensible (éviter les notations arbitraires).
+ * — RF-016 (création) et RF-017 (note moyenne). Endpoints implémentés et testés côté backend
+ * (skill dev-laravel, `backend/app/Http/Controllers/Api/Notation/`) : le backend vérifie bien que
+ * `auteurId` (déduit du token) et `cibleId` étaient tous deux parties à `reservationId`, et que la
+ * session est réellement terminée (RF-016), avant d'accepter la notation.
  */
 export async function creerNotation(
   payload: CreateNotationPayload,

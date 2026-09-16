@@ -7,7 +7,8 @@ import type { HistoriqueReservation, HistoriqueRole } from './types';
  * joueur vs réservations reçues sur mes terrains), ce n'est pas un simple filtre sur les mêmes
  * lignes.
  *
- * TODO: endpoints backend à confirmer/implémenter côté Laravel.
+ * Endpoints implémentés et testés côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Historique/HistoriqueController.php`).
  */
 export async function fetchHistorique(
   role: HistoriqueRole,

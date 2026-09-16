@@ -19,4 +19,13 @@ describe('NoteMoyenneBadge', () => {
 
     expect(await screen.findByText(/pas encore de note/i)).toBeTruthy();
   });
+
+  // TC-017-03 (rapport-qa.md) : comportement confirmé plutôt que supposé — voir le commentaire
+  // équivalent côté web pour le détail de l'ambiguïté signalée.
+  it('affiche aussi "Pas encore de note" si le chargement échoue techniquement (comportement actuel, voir rapport-qa.md)', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
+    render(<NoteMoyenneBadge utilisateurId="user-1" />);
+
+    expect(await screen.findByText(/pas encore de note/i)).toBeTruthy();
+  });
 });

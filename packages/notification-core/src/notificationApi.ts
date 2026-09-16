@@ -6,7 +6,12 @@ import type { Notification } from './types';
  * dans l'architecture ; ce module ne fait que consulter le journal des notifications déjà
  * envoyées et enregistrer l'appareil pour recevoir les prochains pushes.
  *
- * TODO: endpoints backend à confirmer/implémenter côté Laravel.
+ * Endpoints implémentés et testés côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Notification/`). **Limite signalée** : la création des
+ * lignes elles-mêmes fonctionne (confirmation déclenchée par le webhook de paiement, rappel par
+ * une tâche planifiée), mais leur délivrance effective (push FCM, email, SMS) reste hors
+ * périmètre — aucun service tiers accessible dans cet environnement (même limite que
+ * Wave/Orange Money/Moov Money).
  */
 export async function fetchNotifications(apiBaseUrl: string, token: string): Promise<Notification[]> {
   const response = await fetch(`${apiBaseUrl}/api/notifications`, {

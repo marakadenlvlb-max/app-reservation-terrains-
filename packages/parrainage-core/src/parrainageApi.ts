@@ -2,7 +2,13 @@ import type { ParrainageResume } from './types';
 
 /**
  * Appels à l'API backend (Laravel, module Parrainage — architecture.md section 2) — RF-025.
- * TODO: endpoints backend à confirmer/implémenter côté Laravel.
+ *
+ * Endpoints implémentés et testés côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Parrainage/ParrainageController.php`). Décisions explicites
+ * du porteur de projet (RF-025 ne précisait ni le bénéficiaire ni la nature de l'avantage) :
+ * le code (déjà généré à l'inscription) profite au **parrain**, activé immédiatement dès que le
+ * filleul l'utilise, et réduit réellement le montant du prochain paiement du parrain (pas une
+ * mention purement informative) — voir la correction du 9 septembre 2026 dans `architecture.md`.
  */
 export async function fetchParrainageResume(apiBaseUrl: string, token: string): Promise<ParrainageResume> {
   const response = await fetch(`${apiBaseUrl}/api/parrainage`, {

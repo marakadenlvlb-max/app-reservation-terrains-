@@ -2,11 +2,11 @@ import type { AnnulationReponse, Reservation } from './types';
 
 /**
  * Appel à l'API backend (Laravel, module Réservation — architecture.md section 2) pour
- * initier une réservation et verrouiller temporairement un créneau — RF-010.
- *
- * TODO: endpoint backend à confirmer/implémenter côté Laravel. Contrat attendu : le backend
- * refuse (409 par ex.) si le créneau est déjà réservé ou verrouillé par quelqu'un d'autre — le
- * frontend ne fait aucune supposition d'exclusivité lui-même, il relaie simplement l'erreur.
+ * initier une réservation et verrouiller temporairement un créneau — RF-010. Endpoint implémenté
+ * et testé côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Reservation/ReservationController.php`) : le backend refuse
+ * bien (409) si le créneau est déjà réservé ou verrouillé par quelqu'un d'autre, via une
+ * transaction avec verrou (`lockForUpdate`) pour rester correct en cas de requêtes concurrentes.
  */
 export async function initierReservation(
   creneauId: string,
@@ -32,7 +32,10 @@ export async function initierReservation(
  * US-11 / RF-014 : relit le statut d'une réservation. Utilisé pour du polling — architecture.md
  * ne prévoit aucun canal temps réel (pas de WebSocket dans la stack retenue), donc c'est le seul
  * moyen pour le frontend de savoir qu'un paiement a été validé par l'opérateur côté backend, sans
- * action de l'utilisateur. TODO: endpoint backend à confirmer/implémenter côté Laravel.
+ * action de l'utilisateur. Endpoint implémenté et testé côté backend (skill dev-laravel) : chaque
+ * lecture constate elle-même une éventuelle expiration du verrou (aucun scheduler dans ce dépôt)
+ * et bascule alors la réservation en 'annulee' avant de répondre — la transition vers 'confirmee'
+ * dépendra du module Paiement (US-12 à US-14), pas encore implémenté côté backend.
  */
 export async function fetchReservation(
   reservationId: string,
@@ -55,7 +58,13 @@ export async function fetchReservation(
  * US-22 / RF-021 : demande l'annulation d'une réservation. Le backend décide seul si le délai de
  * la politique d'annulation est respecté (voir le commentaire sur `AnnulationReponse` dans
  * types.ts) et déclenche le remboursement en conséquence — le frontend relaie simplement le
- * résultat. TODO: endpoint backend à confirmer/implémenter côté Laravel.
+ * résultat.
+ *
+ * Endpoint implémenté et testé côté backend (skill dev-laravel,
+ * `backend/app/Actions/Reservation/AnnulerReservation.php`) : politique décidée le 9 septembre
+ * 2026 faute de valeur chiffrée dans le SRS — remboursement total (net de frais de transaction
+ * provisoires) si annulé plus de 24h avant le créneau, aucun remboursement en dessous (voir
+ * `backend/config/reservation.php`).
  */
 export async function annulerReservation(
   reservationId: string,
