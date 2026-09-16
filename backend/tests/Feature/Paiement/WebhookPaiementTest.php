@@ -54,9 +54,11 @@ test('notifie le joueur et le propriétaire quand le paiement est validé', func
     expect(Notification::where('destinataire_id', $this->proprietaire->id)->where('type', 'confirmation_reservation')->count())->toBe(1);
 });
 
-// TC-015-07 (rapport-qa.md) : RF-015, commission et cycle de reversement tranchés le 9 septembre
-// 2026 (config('paiement.commission_pourcentage'), cycle immédiat dès confirmation).
-test('calcule la commission et marque le reversement comme effectué dès la confirmation', function () {
+// TC-015-07 (rapport-qa.md) : RF-015, commission calculée dès la confirmation (tranché le 9
+// septembre 2026, config('paiement.commission_pourcentage')). Le reversement, lui, reste
+// 'en_attente' à ce stade depuis le 16 septembre 2026 (cycle revu pour éliminer le risque de
+// double versement, voir config/paiement.php et EffectuerReversementsEchus).
+test('calcule la commission dès la confirmation mais laisse le reversement en attente', function () {
     $paiement = $this->paiement;
     $paiement->update(['montant' => 10000]);
 
@@ -67,8 +69,8 @@ test('calcule la commission et marque le reversement comme effectué dès la con
     $frais = $paiement->fresh();
     expect((float) $frais->commission)->toBe(1000.0); // 10% de 10000
     expect((float) $frais->montant_net)->toBe(9000.0);
-    expect($frais->statut_reversement)->toBe('effectue');
-    expect($frais->date_reversement)->not->toBeNull();
+    expect($frais->statut_reversement)->toBe('en_attente');
+    expect($frais->date_reversement)->toBeNull();
 });
 
 test('ne calcule aucune commission quand le paiement échoue', function () {

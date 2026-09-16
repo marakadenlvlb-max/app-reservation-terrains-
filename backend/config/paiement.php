@@ -40,19 +40,27 @@ return [
     | - Commission de 10% prélevée sur chaque paiement validé, valeur PROVISOIRE explicitement
     |   signalée comme telle (aucune grille tarifaire réelle négociée) — à ajuster si une autre
     |   valeur est décidée. Voir TraiterWebhookPaiement.
-    | - Cycle IMMÉDIAT : le reversement (statut_reversement → 'effectue') est marqué effectué dans
-    |   la même opération que la confirmation du paiement (RF-014), pas différé à une tâche
-    |   planifiée groupée — choix le plus simple à opérer/tester, cohérent avec l'absence d'un
-    |   vrai mécanisme de virement groupé dans ce dépôt.
+    |
+    | **Cycle revu le 16 septembre 2026** (remplace le cycle "immédiat" du 9 septembre) : le
+    | reversement (statut_reversement → 'effectue') n'est plus marqué effectué dans la même
+    | opération que la confirmation du paiement (RF-014). Ce cycle immédiat créait un risque de
+    | double versement — signalé ci-dessous à l'origine, maintenant corrigé : un reversement marqué
+    | immédiatement "effectué" puis suivi d'une annulation remboursée (RF-021, AnnulerReservation)
+    | laissait le propriétaire garder le reversement pendant que le joueur était remboursé, sans
+    | mécanisme de recouvrement. Décision explicite du porteur de projet (argent réel en jeu) :
+    | reporter le reversement à un instant où l'annulation devient structurellement impossible,
+    | plutôt que de construire un mécanisme de recouvrement après coup. Concrètement : le
+    | reversement reste 'en_attente' à la confirmation du paiement, et n'est marqué 'effectue' que
+    | par `EffectuerReversementsEchus` (tâche planifiée `paiements:reverser-echus`, voir
+    | routes/console.php) une fois `creneau.debut` passé — le même seuil qu'AnnulerReservation
+    | utilise déjà pour refuser toute annulation ultérieure. Le risque de double versement est donc
+    | éliminé par construction : aucune annulation ne peut plus survenir après qu'un reversement a
+    | été marqué effectué.
     |
     | ⚠️ Limite assumée, distincte de la décision elle-même : comme pour les trois opérateurs de
     | paiement, AUCUN virement réel n'a jamais lieu ici (pas d'API de payout Wave/Orange Money/Moov
     | Money intégrée) — "reversé" ne fait que marquer une ligne en base, une simulation au même
-    | titre que `paiement.simulation` ci-dessus. Conséquence à surveiller avant toute mise en
-    | production réelle : un reversement marqué immédiatement "effectué" puis suivi d'une
-    | annulation remboursée (RF-021, AnnulerReservation) crée un risque de double versement (le
-    | propriétaire garde le reversement pendant que le joueur est remboursé) — aucun mécanisme de
-    | recouvrement n'existe pour ce cas ici, à concevoir avant un vrai lancement.
+    | titre que `paiement.simulation` ci-dessus.
     |
     */
     'commission_pourcentage' => env('PAIEMENT_COMMISSION_POURCENTAGE', 10),

@@ -18,11 +18,17 @@ use Illuminate\Support\Facades\DB;
  * retraité — les opérateurs de paiement réels renvoient couramment le même webhook plusieurs fois
  * (retries en cas de non-réponse rapide), pas une garantie mais une pratique courante à anticiper.
  *
- * RF-015 (correction du 9 septembre 2026) — reversement au propriétaire/gestionnaire : commission
- * et cycle tranchés explicitement par le porteur de projet (voir config/paiement.php). Calculé et
- * marqué "effectué" ici, dans la même transaction que la confirmation : c'est le seul moment où le
- * backend sait qu'un paiement vient réellement d'être validé, pas un mécanisme séparé à
- * resynchroniser.
+ * RF-015 (correction du 9 septembre 2026, cycle revu le 16 septembre 2026) — reversement au
+ * propriétaire/gestionnaire : commission calculée ici (c'est le seul moment où le backend sait
+ * qu'un paiement vient réellement d'être validé), mais **plus marquée "effectué" immédiatement**.
+ * Le cycle "immédiat" du 9 septembre créait un risque de double versement : une annulation
+ * remboursée (RF-021, AnnulerReservation) après un reversement déjà "effectué" laissait le
+ * propriétaire garder l'argent pendant que le joueur était remboursé, sans mécanisme de
+ * recouvrement. Décision du porteur de projet (16 septembre 2026, argent réel en jeu) : le
+ * reversement reste `'en_attente'` ici et n'est marqué `'effectue'` que par
+ * `EffectuerReversementsEchus` (tâche planifiée `paiements:reverser-echus`), une fois le créneau
+ * commencé — le seuil exact où `AnnulerReservation` refuse déjà toute annulation, donc le risque
+ * est éliminé par construction plutôt que rattrapé après coup. Voir config/paiement.php.
  */
 class TraiterWebhookPaiement
 {
@@ -55,8 +61,9 @@ class TraiterWebhookPaiement
                 $paiement->update([
                     'commission' => $commission,
                     'montant_net' => round((float) $paiement->montant - $commission, 2),
-                    'statut_reversement' => 'effectue',
-                    'date_reversement' => now(),
+                    // Plus 'effectue'/now() ici — voir EffectuerReversementsEchus, qui referme la
+                    // boucle une fois le créneau commencé (annulation structurellement impossible).
+                    'statut_reversement' => 'en_attente',
                 ]);
             } else {
                 // RF-014 : "en cas d'échec de paiement, le créneau doit redevenir disponible."

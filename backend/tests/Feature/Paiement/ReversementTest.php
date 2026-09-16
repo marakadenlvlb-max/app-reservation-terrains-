@@ -50,9 +50,10 @@ test('liste les reversements du propriétaire connecté', function () {
 });
 
 // TC-015-07 (rapport-qa.md) : chemin réel — un paiement confirmé via le webhook (RF-014) porte
-// une commission et un statut de reversement réellement calculés (RF-015, tranché le 9 septembre
-// 2026), pas les valeurs de secours du test ci-dessus.
-test('affiche la commission et le reversement réellement calculés pour un paiement confirmé', function () {
+// une commission réellement calculée (RF-015, tranché le 9 septembre 2026), mais un reversement
+// encore 'en_attente' (cycle revu le 16 septembre 2026 — voir EffectuerReversementsTest.php pour
+// le passage à 'effectue' une fois le créneau commencé).
+test('affiche la commission réellement calculée, reversement en attente, pour un paiement confirmé', function () {
     $proprietaire = User::factory()->create();
     $terrain = Terrain::factory()->create(['proprietaire_id' => $proprietaire->id]);
     $creneau = Creneau::factory()->create(['terrain_id' => $terrain->id]);
@@ -66,9 +67,9 @@ test('affiche la commission et le reversement réellement calculés pour un paie
         'montant' => 20000.0,
         'commission' => 2000.0, // 10% de 20000
         'montantNet' => 18000.0,
-        'statutReversement' => 'effectue',
+        'statutReversement' => 'en_attente',
+        'dateReversement' => null,
     ]]);
-    expect($this->getJson('/api/reversements')->json('0.dateReversement'))->not->toBeNull();
 });
 
 test('n\'affiche pas les paiements des terrains d\'un autre propriétaire', function () {

@@ -8,13 +8,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * Forme exacte de `Reversement` (packages/paiement-core/src/types.ts).
  *
- * `commission`/`montantNet`/`statutReversement`/`dateReversement` sont désormais calculés et
- * renseignés réellement par `TraiterWebhookPaiement` dès la confirmation du paiement — commission
- * et cycle (immédiat) explicitement tranchés par le porteur de projet le 9 septembre 2026, voir
- * `config/paiement.php`. Le repli `?? 'en_attente'` sur `statutReversement` reste une défense pour
- * un paiement qui n'aurait pas transité par ce flux (ex. créé directement en base dans un test) —
- * `statutReversement` n'est jamais `null` côté frontend (`StatutReversement`, types.ts), donc ce
- * champ ne peut de toute façon jamais rester vide dans la réponse.
+ * `commission`/`montantNet` sont calculés et renseignés réellement par `TraiterWebhookPaiement` dès
+ * la confirmation du paiement (commission tranchée par le porteur de projet le 9 septembre 2026).
+ * `statutReversement` reste `'en_attente'` à ce stade (cycle revu le 16 septembre 2026, voir
+ * `config/paiement.php`) : c'est désormais un état normal et attendu, pas seulement transitoire —
+ * `EffectuerReversementsEchus` le passe à `'effectue'` une fois le créneau commencé. Le repli
+ * `?? 'en_attente'` couvre en plus un paiement qui n'aurait pas transité par ce flux (ex. créé
+ * directement en base dans un test) — `statutReversement` n'est jamais `null` côté frontend
+ * (`StatutReversement`, types.ts), donc ce champ ne peut de toute façon jamais rester vide.
  */
 class ReversementResource extends JsonResource
 {
