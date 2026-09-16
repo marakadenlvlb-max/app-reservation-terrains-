@@ -67,6 +67,7 @@ graph TD
     Messagerie[Module Messagerie]
     Recommandations[Module Recommandations]
     Parrainage[Module Parrainage]
+    Navigation[Module Navigation & Interface globale]
     DB[(PostgreSQL + PostGIS)]
     Wave[API Wave]
     OM[API Orange Money]
@@ -75,6 +76,8 @@ graph TD
     Push[Service de notifications]
 
     Client --> API
+    Client --> Navigation
+    Navigation --> Auth
     API --> Auth
     API --> Annonces
     API --> Recherche
@@ -120,6 +123,17 @@ graph TD
 | Messagerie | Échange de messages entre un joueur et un propriétaire/gestionnaire au sujet d'une réservation | RF-023 |
 | Recommandations | Suggestion de terrains à un joueur à partir de son historique de réservations | RF-024 |
 | Parrainage | Parrainage d'autres utilisateurs et suivi des avantages associés | RF-025 |
+| Navigation & Interface globale | Shell de navigation applicatif (menu global, accueil post-connexion) — capacité purement frontend, ne persiste aucune donnée propre | — *(aucune RF dédiée ; condition transverse à l'utilisabilité de toutes les RF ci-dessus)* |
+
+> **Révision du 16 septembre 2026** : ajout du module Navigation & Interface globale, en amont de son
+> implémentation (US-27, `backlog.md`) — contrairement aux autres révisions de cette section, ce
+> n'est pas un écart détecté en codant mais un chantier planifié à froid : aucune des user stories
+> livrées jusqu'ici ne relie les écrans entre eux (chacun reçoit ses identifiants en props plutôt
+> que par un routeur), et `UTILISATEUR` n'a pas de champ `role` — un même compte peut être à la
+> fois joueur et propriétaire/gestionnaire, donc l'atterrissage post-connexion ne peut pas être un
+> simple aiguillage par rôle. Portée d'US-27 volontairement étroite (shell web + accueil combiné
+> uniquement) ; le retrofit des écrans existants et la navigation mobile restent hors périmètre,
+> voir `backlog.md` section 2 (Sprint 19).
 
 > **Révision du 30 août 2026** : la version initiale de ce tableau laissait les modules Should/
 > Could have "non détaillés". RF-021 (annulation/remboursement) et RF-022 (filtres de recherche)

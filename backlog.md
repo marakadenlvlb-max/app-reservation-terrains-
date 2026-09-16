@@ -10,6 +10,12 @@ Annulation — clos, US-22 —, Recherche & Catalogue — clos, US-07/US-08/US-0
 Messagerie — clos, US-24 —, Recommandations — clos, US-25 — et Parrainage — clos, US-26).
 **Tous les modules du backlog (US-01 à US-26) sont désormais implémentés et testés côté
 backend.***
+*Mise à jour du 16 septembre 2026 : ajout d'US-27 (Navigation & accueil unique, web) — chantier
+transverse identifié à partir des notes de limite répétées sur US-05, US-16, US-18, US-21, US-24,
+US-25 ("faute de routeur en place"), jamais planifié comme tel jusqu'ici. Portée volontairement
+étroite (shell de navigation web + accueil combiné) ; le retrofit des écrans existants vers de
+vrais liens (US-28, à rédiger séparément) et la navigation mobile (étape séparée, non planifiée à
+ce stade) en sont explicitement exclus.*
 
 ## 1. Backlog
 
@@ -41,6 +47,7 @@ backend.***
 | US-24 | En tant que joueur, je veux envoyer un message au propriétaire/gestionnaire pour poser une question sur un créneau afin de clarifier un détail avant de réserver. | Messagerie | Could | M | ✅ Fait (web + mobile) |
 | US-25 | En tant que joueur, je veux recevoir des recommandations de terrains basées sur mon historique afin de découvrir des terrains pertinents plus facilement. | Recommandations | Could | M | ✅ Fait (web + mobile) |
 | US-26 | En tant qu'utilisateur, je veux parrainer d'autres joueurs afin de gagner un avantage et faire connaître l'app. | Parrainage | Could | S | ✅ Fait (web + mobile) |
+| US-27 | En tant qu'utilisateur connecté (joueur et/ou propriétaire/gestionnaire — aucun rôle exclusif dans le modèle actuel), je veux atterrir sur un accueil unique après connexion et disposer d'un menu de navigation global afin d'accéder à toutes mes fonctionnalités sans avoir à choisir un rôle. | Navigation & Interface globale *(web)* | Must | L | 🔜 À faire |
 
 **Hors backlog V1** (Won't have — voir PRD section 4, hors scope) :
 - Organisation de tournois ou de matchs multi-équipes.
@@ -150,6 +157,19 @@ le permet une fois la V1 Must have livrée et validée.*
 | US-25 | Could | M | ✅ Fait (web + mobile) |
 | US-26 | Could | S | ✅ Fait (web + mobile) |
 
+### Sprint 19 — Un utilisateur connecté navigue depuis un accueil unique et un menu global *(web)*
+| User story | Priorité | Estimation | Statut |
+|-------------|-----------|--------------|--------|
+| US-27 | Must | L | 🔜 À faire |
+
+*Portée US-27 : layout racine web (`web/src/app/layout.tsx`) avec barre de navigation horizontale
+persistante pour tout utilisateur connecté (masquée sur `/connexion`/`/inscription`), 8 entrées —
+Accueil, Recherche, Mes annonces, Mes réservations, Messagerie, Notifications, Profil (Parrainage
+regroupé dessous), Déconnexion —, nouvelle page `/accueil` (accueil unique combiné, sans
+distinction de rôle), et redirection vers `/accueil` après connexion/inscription réussie.
+Explicitement hors scope : retrofit des liens internes existants (props d'IDs → vraies routes,
+US-28) et navigation mobile (étape séparée, non planifiée à ce stade).*
+
 ## 3. Matrice de traçabilité
 
 | User story | Module (architecture) |
@@ -180,12 +200,15 @@ le permet une fois la V1 Must have livrée et validée.*
 | US-24 | Messagerie |
 | US-25 | Recommandations |
 | US-26 | Parrainage |
+| US-27 | Navigation & Interface globale *(web)* |
 
 Tous les modules de l'architecture ont au moins une user story associée. Les modules Messagerie,
 Recommandations et Parrainage ont été détaillés dans `architecture.md` le 30 août 2026, en même
 temps que leur implémentation (US-24/US-25/US-26) — voir la révision correspondante dans ce
 document pour le détail (nouvelles entités MESSAGE et PARRAINAGE, aucun ajout nécessaire pour
-Recommandations).
+Recommandations). Le module Navigation & Interface globale a été ajouté à `architecture.md` le
+16 septembre 2026, en amont de son implémentation cette fois (US-27 encore à faire) — pas de
+nouvelle entité de données, c'est une capacité purement frontend (routage + shell applicatif).
 
 ## 4. Suivi d'implémentation
 
@@ -217,3 +240,4 @@ Recommandations).
 | US-24 | ✅ Fait (30 août 2026) | **Écart d'architecture détecté et corrigé avant codage** : `architecture.md` mentionnait la messagerie comme "non détaillée" — aucune entité MESSAGE n'existait. Ajoutée (reservation_id, auteur_id, contenu, created_at), correction du 30 août 2026. Nouveau module Messagerie dans le tableau des modules (RF-023) et nouveau package `packages/messagerie-core/` (`useMessages` : liste + envoi, mise à jour locale immédiate après envoi). Pas de `destinataire_id` sur MESSAGE : l'autre partie de la conversation se déduit de la réservation (même principe que `HistoriqueReservation.autrePartie`). **Hypothèse de portée documentée dans architecture.md** : une conversation existe dès qu'une réservation est initiée (statut `en_attente_paiement` inclus), pas seulement une fois confirmée — ça correspond à "poser une question... avant de réserver" (le verrouillage temporaire RF-010 crée déjà la réservation à ce stade). Web : `MessagerieView` (page `/reservations/[reservationId]/messages`). Mobile : `MessagerieScreen` (reservationId en prop, pas de routeur). Câblé dans l'historique (US-18/US-19, les deux rôles) via un lien "Envoyer un message" sur chaque réservation. Tests écrits et exécutés, verts. Dépend des endpoints backend `/api/reservations/:id/messages` (GET/POST), pas encore implémentés côté Laravel. **Mise à jour du 9 septembre 2026** : backend implémenté (`MessagerieController`, `ObtenirMessages`/`EnvoyerMessage`) — confirme l'hypothèse de portée déjà documentée (aucune restriction de statut de réservation), réservé aux deux parties de la réservation (joueur, propriétaire via `creneau.terrain.proprietaire_id`), `estDeMoi` calculé dans la Resource par rapport à l'utilisateur authentifié de la requête plutôt que stocké. 9 tests Pest écrits et exécutés, tous verts. TODO retiré de `messagerieApi.ts` — **le module Messagerie (US-24) est maintenant entièrement implémenté et testé côté backend.** |
 | US-25 | ✅ Fait (30 août 2026) | **Aucun écart d'architecture** : une recommandation se calcule à partir de données déjà stockées (historique de réservations via RESERVATION, `UTILISATEUR.sports_pratiques` déjà anticipé par la correction du 29 août 2026) — lecture dérivée, pas de nouvelle donnée à persister. Nouveau module Recommandations dans le tableau des modules (RF-024). Extension de `packages/recherche-core/` : nouveau type `TerrainRecommande` (distinct de `RechercheResultat` — un terrain suggéré n'a pas de créneau précis associé, d'où `tarifMin`), `fetchRecommandations`/`useRecommandations` (contrairement à `searchTerrains`, exige un token : la suggestion dépend de l'historique personnel). Web : `RecommandationsList` (page `/recommandations`, lien réel vers le détail du terrain comme dans `SearchTerrains`). Mobile : `RecommandationsScreen` (même limite de navigation que les autres écrans mobiles). Tests écrits et exécutés, verts. Dépend de l'endpoint backend `/api/recommandations/terrains`, pas encore implémenté côté Laravel — en particulier l'algorithme de suggestion lui-même, qui reste une décision métier backend. **Mise à jour du 9 septembre 2026** : backend implémenté (`RecommandationController`, `ObtenirRecommandations`). **Algorithme explicitement provisoire, signalé en code plutôt que deviné silencieusement** (comme pour la durée du verrou/le délai de rappel, pas une question à trancher via `AskUserQuestion` puisque non financière) : sport d'intérêt = union de `UTILISATEUR.sports_pratiques` et des sports déjà réservés par le joueur ; terrains déjà réservés exclus ("découvrir", pas re-suggérer du connu) ; seuls les terrains avec au moins un créneau réellement disponible retenus ; aucun signal exploitable → aucune recommandation plutôt qu'une suggestion large devinée. 7 tests Pest écrits et exécutés, tous verts. TODO retiré de `recommandationApi.ts` — **le module Recommandations (US-25) est maintenant entièrement implémenté et testé côté backend.** |
 | US-26 | ✅ Fait (30 août 2026) | **Écart d'architecture détecté et corrigé avant codage** : rien ne permettait de représenter "qui a parrainé qui" ni de suivre l'avantage accordé. Ajout de l'entité PARRAINAGE (parrain_id, filleul_id, statut, avantage, created_at) et du champ `UTILISATEUR.code_parrainage`, correction du 30 août 2026 — le lien parrain→filleul est porté uniquement par PARRAINAGE (pas de champ redondant sur UTILISATEUR), un filleul n'ayant par construction qu'au plus une ligne PARRAINAGE le concernant. Nouveau module Parrainage dans le tableau des modules (RF-025) et nouveau package `packages/parrainage-core/` (`useParrainage` : code + filleuls + soumission d'un code reçu). **Hypothèse de portée documentée dans architecture.md** : le rattachement filleul→parrain se fait en saisissant un code depuis ce nouveau module, pas au moment de l'inscription (US-01) — évite de rouvrir un formulaire déjà livré et testé pour un besoin Could have. Web : `ParrainageView` (page `/parrainage`). Mobile : `ParrainageScreen`. Tests écrits et exécutés, verts. **Sprints 17 et 18 clos — tout le Could have du backlog initial est livré.** Dépend des endpoints backend `/api/parrainage` (GET) et `/api/parrainage/utiliser` (POST), pas encore implémentés côté Laravel — en particulier la génération du code et la définition précise de l'avantage accordé, qui restent des décisions métier backend. **Mise à jour du 9 septembre 2026** : backend implémenté (`ParrainageController`, `ObtenirParrainageResume`/`UtiliserCodeParrainage`). Génération du code déjà en place depuis US-01 (`InscrireUtilisateur`, 8 caractères alphanumériques, valeur technique provisoire signalée dans le code). RF-025 ne précisait ni le bénéficiaire de l'avantage, ni sa nature, ni la condition d'activation — trois points soumis au porteur de projet (`AskUserQuestion`, argent réel en jeu) plutôt que devinés : l'avantage profite au **parrain** (pas au filleul), s'active **immédiatement** dès l'usage du code par le filleul (statut passe directement à 'valide'), et **réduit réellement** le montant du prochain paiement du parrain (10% provisoire, `config('parrainage.reduction_pourcentage')`) — `InitierPaiement` (module Paiement) étendu pour consommer la plus ancienne récompense 'valide' du payeur (FIFO, à usage unique, statut passe à 'utilise'). `architecture.md` corrigé (`PARRAINAGE.reduction_pourcentage`/`paiement_id`, nouvelle relation PAIEMENT→PARRAINAGE). 21 tests Pest écrits et exécutés (dont 3 dans `InitierPaiementTest.php` pour la consommation de la réduction), tous verts. TODO retiré de `parrainageApi.ts` — **le module Parrainage (US-26) est maintenant entièrement implémenté et testé côté backend. Tous les modules du backlog (US-01 à US-26) sont désormais implémentés côté backend Laravel.** |
+| US-27 | 🔜 À faire (rédigée le 16 septembre 2026, validée à l'oral avec le porteur de projet) | Portée verrouillée : layout racine web avec barre de navigation horizontale persistante (8 entrées — Accueil, Recherche, Mes annonces, Mes réservations, Messagerie, Notifications, Profil avec Parrainage regroupé dessous, Déconnexion), nouvelle page `/accueil` (accueil unique combiné joueur/propriétaire, pas de sélection de rôle car `UTILISATEUR` n'a pas de champ `role`), redirection vers `/accueil` après connexion ou inscription réussie. **Explicitement exclu de cette user story** : le retrofit des liens internes des écrans déjà livrés qui passent encore leurs IDs en props plutôt que par de vrais liens (`terrainId`, `reservationId`, `cibleId`...) — prévu comme US-28 séparée, pas encore rédigée. La navigation mobile (React Navigation/Expo Router) est elle aussi hors scope, traitée comme une étape séparée non planifiée à ce stade. |
