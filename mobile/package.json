@@ -19,6 +19,7 @@
     "@app/recherche-core": "*",
     "@app/reservation-core": "*",
     "@app/shared": "*",
+    "@react-native/js-polyfills": "^0.74.87",
     "@react-navigation/drawer": "^6.7.2",
     "expo": "~51.0.0",
     "expo-image-picker": "~15.0.0",
