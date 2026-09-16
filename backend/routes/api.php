@@ -57,6 +57,9 @@ Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('terrains')->group(function () {
         Route::post('/', [TerrainController::class, 'store']);
+        // US-27 : DOIT être déclarée avant `{terrain}` ci-dessous, sinon le paramètre capturerait
+        // "mes-terrains" comme un id (même piège que `mes-reservations`, US-18).
+        Route::get('mes-terrains', [TerrainController::class, 'mesTerrains']);
         Route::get('{terrain}', [TerrainController::class, 'show']);
         Route::patch('{terrain}', [TerrainController::class, 'update']);
         Route::delete('{terrain}', [TerrainController::class, 'destroy']);
@@ -121,6 +124,11 @@ Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
     Route::get('{reservation}/messages', [MessagerieController::class, 'index']);
     Route::post('{reservation}/messages', [MessagerieController::class, 'store']);
 });
+
+// US-27/US-28 (module Navigation & Interface globale) — URL exacte de fetchMesConversations
+// (messagerieApi.ts). Préfixe distinct de `reservations/{reservation}/messages` ci-dessus, aucun
+// conflit d'ordre de déclaration possible entre les deux.
+Route::middleware('auth:sanctum')->get('messagerie/mes-conversations', [MessagerieController::class, 'mesConversations']);
 
 /*
 |--------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Annonces;
 
 use App\Actions\Annonces\ModifierAnnonce;
+use App\Actions\Annonces\ObtenirMesTerrains;
 use App\Actions\Annonces\PublierAnnonce;
 use App\Actions\Annonces\RetirerAnnonce;
 use App\Actions\Annonces\TeleverserPhotoTerrain;
@@ -13,6 +14,7 @@ use App\Http\Resources\Annonces\TerrainResource;
 use App\Models\Terrain;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
 /**
@@ -30,6 +32,16 @@ class TerrainController extends Controller
         $terrain = $action->handle($request->user(), $request->validated());
 
         return new TerrainResource($terrain);
+    }
+
+    /**
+     * US-27 (module Navigation & Interface globale) — liste des annonces du propriétaire/
+     * gestionnaire connecté. Route littérale `mes-terrains`, déclarée avant `{terrain}` dans
+     * routes/api.php (même piège que `mes-reservations`, US-18).
+     */
+    public function mesTerrains(Request $request, ObtenirMesTerrains $action): AnonymousResourceCollection
+    {
+        return TerrainResource::collection($action->handle($request->user()));
     }
 
     public function show(Request $request, Terrain $terrain): TerrainResource

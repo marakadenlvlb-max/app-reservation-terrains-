@@ -30,13 +30,10 @@ export async function fetchMessages(
 /**
  * US-27 (module Navigation & Interface globale — "Messagerie") : liste des conversations du
  * joueur ou propriétaire/gestionnaire connecté, une par réservation ayant au moins un message.
- *
- * // TODO: endpoint backend à confirmer/implémenter — `GET /api/messagerie/mes-conversations`
- * n'existe pas encore côté Laravel (messagerieApi.ts n'avait que get/post *par réservation*
- * jusqu'ici, cohérent avec RF-023 qui ne prévoit pas de messagerie libre). Découvert en
- * implémentant US-27 : aucune vue d'ensemble des conversations n'a jamais été conçue, décision
- * métier laissée au backend sur ce qui doit apparaître dans la liste (ex. une conversation vide
- * — réservation existante mais aucun message envoyé — doit-elle y figurer ?).
+ * Endpoint implémenté et testé côté backend (skill dev-laravel,
+ * `backend/app/Http/Controllers/Api/Messagerie/MessagerieController.php@mesConversations`) — une
+ * réservation sans aucun message n'apparaît pas dans la liste (décision documentée dans
+ * `App\Actions\Messagerie\ObtenirMesConversations`).
  */
 export async function fetchMesConversations(apiBaseUrl: string, token: string): Promise<ConversationApercu[]> {
   const response = await fetch(`${apiBaseUrl}/api/messagerie/mes-conversations`, {

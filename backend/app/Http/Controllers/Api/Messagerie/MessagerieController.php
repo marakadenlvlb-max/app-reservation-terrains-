@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Messagerie;
 
 use App\Actions\Messagerie\EnvoyerMessage;
+use App\Actions\Messagerie\ObtenirMesConversations;
 use App\Actions\Messagerie\ObtenirMessages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Messagerie\EnvoyerMessageRequest;
+use App\Http\Resources\Messagerie\ConversationApercuResource;
 use App\Http\Resources\Messagerie\MessageResource;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
@@ -29,5 +31,14 @@ class MessagerieController extends Controller
         $message = $action->handle($request->user(), $reservation, $request->validated('contenu'));
 
         return new MessageResource($message);
+    }
+
+    /**
+     * US-27/US-28 (module Navigation & Interface globale) — liste des conversations de
+     * l'utilisateur connecté, une par réservation ayant au moins un message.
+     */
+    public function mesConversations(Request $request, ObtenirMesConversations $action): AnonymousResourceCollection
+    {
+        return ConversationApercuResource::collection($action->handle($request->user()));
     }
 }

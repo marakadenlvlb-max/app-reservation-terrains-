@@ -31,12 +31,8 @@ export async function createTerrain(
  * US-27 (module Navigation & Interface globale — "Mes annonces") : liste des terrains du
  * propriétaire/gestionnaire connecté, pour l'accueillir sur une page dédiée plutôt que de
  * n'atteindre chaque annonce que par une URL directe déjà connue (seul moyen jusqu'ici, faute de
- * routeur applicatif — voir backlog.md).
- *
- * // TODO: endpoint backend à confirmer/implémenter — `GET /api/terrains/mes-terrains` n'existe
- * pas encore côté Laravel (terrainApi.ts n'avait que create/fetch-by-id/update/delete jusqu'ici),
- * découvert en implémentant US-27, pas anticipé par architecture.md/backlog.md au moment de leur
- * rédaction.
+ * routeur applicatif — voir backlog.md). Endpoint implémenté et testé côté backend (skill
+ * dev-laravel, `backend/app/Http/Controllers/Api/Annonces/TerrainController.php@mesTerrains`).
  */
 export async function fetchMesTerrains(apiBaseUrl: string, token: string): Promise<Terrain[]> {
   const response = await fetch(`${apiBaseUrl}/api/terrains/mes-terrains`, {
