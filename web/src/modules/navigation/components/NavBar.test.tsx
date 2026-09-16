@@ -31,7 +31,8 @@ describe('NavBar', () => {
     await waitFor(() => expect(screen.queryByRole('navigation')).not.toBeInTheDocument());
   });
 
-  it('affiche les 8 entrées pour un utilisateur connecté', async () => {
+  // US-28 (Sprint 20) ajoute Recommandations à la nav globale — 9 entrées désormais.
+  it('affiche les 9 entrées pour un utilisateur connecté', async () => {
     window.localStorage.setItem('auth_token', 'authenticated');
     render(<NavBar />);
 
@@ -41,6 +42,7 @@ describe('NavBar', () => {
     for (const label of [
       'Accueil',
       'Recherche',
+      'Recommandations',
       'Mes annonces',
       'Mes réservations',
       'Messagerie',

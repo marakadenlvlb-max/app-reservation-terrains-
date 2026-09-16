@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLoginForm } from '@app/auth-core';
 import { webSessionStorage } from '../sessionStorage';
@@ -89,6 +90,11 @@ export function LoginForm() {
       >
         {submitting ? 'Connexion en cours…' : 'Se connecter'}
       </button>
+
+      {/* US-28 : /inscription n'était atteignable que par une URL tapée à la main. */}
+      <Link href="/inscription" className="text-sm text-blue-600 underline">
+        Pas encore de compte ? Créer un compte
+      </Link>
     </form>
   );
 }

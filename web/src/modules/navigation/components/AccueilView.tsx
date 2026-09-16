@@ -23,6 +23,16 @@ export function AccueilView() {
         >
           Gérer mes annonces de terrain
         </Link>
+        {/*
+         * US-28 : /reversements n'était lié depuis nulle part dans l'app (cul-de-sac). Regroupé
+         * ici, à côté des annonces, plutôt qu'ajouté à la nav globale — `UTILISATEUR` n'a pas de
+         * champ `role`, donc aucun vrai moyen de réserver un lien de nav aux propriétaires/
+         * gestionnaires ; ce regroupement contextuel en tient lieu (décision explicite du porteur
+         * de projet).
+         */}
+        <Link href="/reversements" className="text-sm text-blue-600 underline">
+          Voir mes reversements
+        </Link>
       </div>
     </div>
   );

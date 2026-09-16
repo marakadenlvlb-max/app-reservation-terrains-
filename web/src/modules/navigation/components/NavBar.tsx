@@ -7,13 +7,16 @@ import { webSessionStorage } from '../../authentification/sessionStorage';
 import { LogoutButton } from '../../authentification/components/LogoutButton';
 
 /**
- * 8 entrées verrouillées avec le porteur de projet (backlog.md, Sprint 19) — Parrainage n'y
- * figure pas en tant que lien de menu à part entière : regroupé sous Profil (lien ajouté sur la
- * page /profil elle-même) plutôt que d'occuper une 9e entrée.
+ * 8 entrées verrouillées avec le porteur de projet à la livraison d'US-27 (backlog.md, Sprint 19)
+ * — Parrainage n'y figure pas en tant que lien de menu à part entière : regroupé sous Profil
+ * (lien ajouté sur la page /profil elle-même) plutôt que d'occuper une entrée. Recommandations
+ * ajoutée par US-28 (Sprint 20, sur demande explicite : "dans la nav globale, accessible
+ * partout") — 9 entrées désormais, seule exception au principe "regroupé plutôt qu'ajouté".
  */
 const LIENS: { href: string; label: string }[] = [
   { href: '/accueil', label: 'Accueil' },
   { href: '/recherche', label: 'Recherche' },
+  { href: '/recommandations', label: 'Recommandations' },
   { href: '/mes-annonces', label: 'Mes annonces' },
   { href: '/historique/joueur', label: 'Mes réservations' },
   { href: '/messagerie', label: 'Messagerie' },

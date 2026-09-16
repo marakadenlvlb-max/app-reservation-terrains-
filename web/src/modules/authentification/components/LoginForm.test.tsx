@@ -105,4 +105,11 @@ describe('LoginForm', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     }
   );
+
+  // US-28 : /inscription n'était atteignable depuis ici que par une URL tapée à la main.
+  it('propose un lien vers /inscription', () => {
+    render(<LoginForm />);
+
+    expect(screen.getByRole('link', { name: /créer un compte/i })).toHaveAttribute('href', '/inscription');
+  });
 });

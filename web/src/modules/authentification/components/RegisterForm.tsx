@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SPORT_OPTIONS, useRegisterForm } from '@app/auth-core';
 
@@ -120,6 +121,11 @@ export function RegisterForm() {
       >
         {submitting ? 'Création en cours…' : 'Créer mon compte'}
       </button>
+
+      {/* US-28 : /connexion n'était atteignable depuis ici que par une URL tapée à la main. */}
+      <Link href="/connexion" className="text-sm text-blue-600 underline">
+        Déjà un compte ? Se connecter
+      </Link>
     </form>
   );
 }

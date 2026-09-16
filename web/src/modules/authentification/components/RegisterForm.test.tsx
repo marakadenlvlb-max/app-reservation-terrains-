@@ -128,4 +128,11 @@ describe('RegisterForm', () => {
 
     expect(screen.getByLabelText(/mot de passe/i)).toHaveAttribute('type', 'password');
   });
+
+  // US-28 : /connexion n'était atteignable depuis ici que par une URL tapée à la main.
+  it('propose un lien vers /connexion', () => {
+    render(<RegisterForm />);
+
+    expect(screen.getByRole('link', { name: /se connecter/i })).toHaveAttribute('href', '/connexion');
+  });
 });
