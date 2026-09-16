@@ -74,6 +74,30 @@ describe('HistoriqueList', () => {
     expect(await screen.findByText(/aucune réservation/i)).toBeInTheDocument();
   });
 
+  // US-27 : le menu global ne pointe que vers /historique/joueur, ce lien croisé est le seul
+  // chemin restant vers /historique/proprietaire (et réciproquement).
+  it.each([
+    { role: 'joueur' as const, hrefAttendu: '/historique/proprietaire' },
+    { role: 'proprietaire' as const, hrefAttendu: '/historique/joueur' },
+  ])('propose un lien vers l\'autre vue pour le rôle $role, liste vide', async ({ role, hrefAttendu }) => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, json: async () => [] })));
+    render(<HistoriqueList role={role} />);
+
+    await screen.findByText(/aucune réservation/i);
+    expect(screen.getByRole('link', { name: /voir/i })).toHaveAttribute('href', hrefAttendu);
+  });
+
+  it.each([
+    { role: 'joueur' as const, hrefAttendu: '/historique/proprietaire' },
+    { role: 'proprietaire' as const, hrefAttendu: '/historique/joueur' },
+  ])('propose un lien vers l\'autre vue pour le rôle $role, liste non vide', async ({ role, hrefAttendu }) => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })));
+    render(<HistoriqueList role={role} />);
+
+    await screen.findByText(/awa diallo/i);
+    expect(screen.getByRole('link', { name: /voir/i })).toHaveAttribute('href', hrefAttendu);
+  });
+
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
     window.localStorage.clear();
     render(<HistoriqueList role="joueur" />);

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { SPORT_OPTIONS, useRegisterForm } from '@app/auth-core';
 
 /**
@@ -10,6 +11,8 @@ import { SPORT_OPTIONS, useRegisterForm } from '@app/auth-core';
  * brancher l'UI web sur cette logique partagée.
  */
 export function RegisterForm() {
+  const router = useRouter();
+
   const {
     identifiant,
     motDePasse,
@@ -24,8 +27,13 @@ export function RegisterForm() {
   } = useRegisterForm({
     apiBaseUrl: process.env.NEXT_PUBLIC_API_URL ?? '',
     onSuccess: () => {
-      // TODO: rediriger vers l'étape suivante (édition du profil, US-03) une fois le routing
-      // de l'app défini au-delà de cette seule page.
+      // US-27 referme ce TODO, mais PAS vers /accueil (page réservée aux utilisateurs connectés,
+      // masquée sinon par NavBar) : `RegisterResult` (packages/auth-core/src/types.ts) ne renvoie
+      // aucun token — contrairement à LoginResult, l'inscription ne crée pas de session. Découvert
+      // en implémentant US-27 (backlog.md prévoyait "connexion ou inscription" vers /accueil sans
+      // avoir vérifié ce détail) : on redirige donc vers /connexion pour que le compte fraîchement
+      // créé s'authentifie explicitement, comme le prévoit RF-001/RF-002 (deux étapes séparées).
+      router.push('/connexion');
     },
   });
 

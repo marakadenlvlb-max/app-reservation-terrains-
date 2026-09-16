@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useLogout } from '@app/auth-core';
 import { webSessionStorage } from '../sessionStorage';
 
@@ -8,11 +9,14 @@ import { webSessionStorage } from '../sessionStorage';
  * (appel API + effacement du token) vit dans useLogout, réutilisé tel quel côté mobile.
  */
 export function LogoutButton() {
+  const router = useRouter();
+
   const { loggingOut, logout } = useLogout({
     apiBaseUrl: process.env.NEXT_PUBLIC_API_URL ?? '',
     sessionStorage: webSessionStorage,
     onLoggedOut: () => {
-      // TODO: rediriger vers la page de connexion une fois le routing défini.
+      // US-27 (module Navigation & Interface globale) referme ce TODO.
+      router.push('/connexion');
     },
   });
 

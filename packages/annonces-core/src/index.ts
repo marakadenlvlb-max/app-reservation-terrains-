@@ -7,3 +7,4 @@ export * from './useTerrainPhotoUpload';
 export * from './creneauApi';
 export * from './useCreneaux';
 export * from './useEditTerrainForm';
+export * from './useMesTerrains';

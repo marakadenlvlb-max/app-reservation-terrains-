@@ -4,9 +4,18 @@ import userEvent from '@testing-library/user-event';
 import { LoginForm } from './LoginForm';
 
 const fetchMock = vi.fn();
+const pushMock = vi.fn();
+
+// US-27 : LoginForm redirige désormais vers /accueil via next/navigation plutôt que d'afficher
+// un message statique sur place — next/navigation exige un contexte App Router absent de jsdom,
+// d'où ce mock (même principe que le mock de fetch, déjà en place pour une autre dépendance externe).
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: pushMock }),
+}));
 
 beforeEach(() => {
   fetchMock.mockReset();
+  pushMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
   window.localStorage.clear();
 });
@@ -45,6 +54,8 @@ describe('LoginForm', () => {
     // contient plus qu'un marqueur non sensible, le vrai secret vivant dans un cookie HttpOnly
     // que ce test (comme le navigateur réel) ne peut pas lire.
     await waitFor(() => expect(window.localStorage.getItem('auth_token')).toBe('authenticated'));
+    // US-27 : redirection vers l'accueil post-connexion (referme le TODO qui vivait ici).
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/accueil'));
   });
 
   it('affiche un message générique si les identifiants sont incorrects', async () => {
@@ -58,6 +69,7 @@ describe('LoginForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/identifiant ou mot de passe incorrect/i);
     expect(window.localStorage.getItem('auth_token')).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   // TC-002-06 (rapport-qa.md) : le test "formulaire vide" plus haut ne prouve que le cas "les

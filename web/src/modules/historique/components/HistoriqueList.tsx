@@ -25,6 +25,17 @@ const AUTRE_PARTIE_LABELS: Record<HistoriqueRole, string> = {
 };
 
 /**
+ * US-27 (module Navigation & Interface globale) : le menu global ne pointe que vers
+ * `/historique/joueur` (une seule entrée "Mes réservations" possible dans la barre horizontale) —
+ * ce lien croisé permet d'atteindre l'autre vue depuis ici, cohérent avec l'accueil combiné
+ * (un compte peut être joueur ET propriétaire/gestionnaire, `UTILISATEUR` n'a pas de champ `role`).
+ */
+const AUTRE_VUE: Record<HistoriqueRole, { href: string; label: string }> = {
+  joueur: { href: '/historique/proprietaire', label: 'Voir les réservations reçues sur mes terrains' },
+  proprietaire: { href: '/historique/joueur', label: 'Voir mes réservations en tant que joueur' },
+};
+
+/**
  * Historique des réservations — US-18 (`role="joueur"`, RF-018) / US-19 (`role="proprietaire"`,
  * RF-019), module Historique. Un seul composant pour les deux vues : structurellement
  * identiques, seul le point de vue (et donc l'endpoint appelé, voir historiqueApi.ts) change.
@@ -68,12 +79,24 @@ export function HistoriqueList({ role }: { role: HistoriqueRole }) {
   }
 
   if (reservations.length === 0) {
-    return <p className="text-sm text-gray-500">Aucune réservation pour l'instant.</p>;
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-gray-500">Aucune réservation pour l'instant.</p>
+        <Link href={AUTRE_VUE[role].href} className="text-sm text-blue-600 underline">
+          {AUTRE_VUE[role].label}
+        </Link>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{TITRES[role]}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">{TITRES[role]}</h1>
+        <Link href={AUTRE_VUE[role].href} className="text-sm text-blue-600 underline">
+          {AUTRE_VUE[role].label}
+        </Link>
+      </div>
       {annulerError && (
         <p role="alert" className="text-sm text-red-600">
           {annulerError}

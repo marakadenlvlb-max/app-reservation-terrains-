@@ -6,9 +6,18 @@ import { RegisterForm } from './RegisterForm';
 // On mocke fetch plutôt que d'appeler un vrai backend : l'endpoint Laravel n'existe pas encore
 // (voir le TODO dans @app/auth-core/registerApi.ts) et ce n'est pas la responsabilité de ce test.
 const fetchMock = vi.fn();
+const pushMock = vi.fn();
+
+// US-27 : RegisterForm redirige désormais vers /connexion via next/navigation (voir le
+// commentaire dans RegisterForm.tsx — l'inscription ne crée pas de session, contrairement à la
+// connexion) — mock nécessaire, next/navigation exige un contexte App Router absent de jsdom.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: pushMock }),
+}));
 
 beforeEach(() => {
   fetchMock.mockReset();
+  pushMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
 });
 
@@ -43,6 +52,8 @@ describe('RegisterForm', () => {
       expect.stringContaining('/api/auth/register'),
       expect.objectContaining({ method: 'POST' })
     );
+    // US-27 : redirection vers /connexion (pas /accueil — l'inscription seule n'authentifie pas).
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/connexion'));
   });
 
   it("affiche une erreur si l'API refuse l'inscription (ex. identifiant déjà utilisé)", async () => {
@@ -59,6 +70,7 @@ describe('RegisterForm', () => {
     await user.click(screen.getByRole('button', { name: /créer mon compte/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/déjà utilisé/i);
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   // TC-001-03 (rapport-qa.md) : RF-001 accepte explicitement "email OU téléphone" comme
