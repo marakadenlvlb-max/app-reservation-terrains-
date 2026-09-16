@@ -19,6 +19,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // session (cookie), tout en laissant les autres s'authentifier par jeton Bearer classique
         // — un seul guard `auth:sanctum` couvre les deux (voir routes/api.php).
         $middleware->statefulApi();
+
+        // BUG trouvé en vérifiant la navigation (16 septembre 2026) : par défaut, withMiddleware()
+        // enregistre redirectGuestsTo(fn () => route('login')) (pensé pour une app avec des vues
+        // web) — ce projet est API-only, aucune route nommée `login` n'existe. Résultat sans ce
+        // correctif : toute requête protégée sans authentification, envoyée sans header
+        // `Accept: application/json` (ce que fait chaque `fetch()` de packages/*-core/src/*Api.ts,
+        // aucun n'en envoie), plante en 500 (RouteNotFoundException) au lieu d'un 401 JSON propre
+        // — cassait potentiellement tout écran protégé visité sans session valide (session
+        // expirée, cookie non encore posé), pas seulement les nouveaux écrans de navigation.
+        $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
