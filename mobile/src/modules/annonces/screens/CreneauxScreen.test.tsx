@@ -14,6 +14,38 @@ jest.mock('expo-secure-store', () => ({
   }),
 }));
 
+// US-05 : @react-native-community/datetimepicker rend une vue native que RNTL ne peut pas piloter
+// telle quelle — mock minimal qui expose `onChange` sur un nœud interrogeable par testID, pour
+// pouvoir simuler "l'utilisateur a choisi telle date" sans reproduire l'UI native. `Platform.OS`
+// résout à 'ios' sous Jest (react-native/jest/setup.js) : c'est donc toujours la branche
+// `mode="datetime"` à un seul appel de `onChange` qui s'exécute ici, jamais le flux Android en
+// deux étapes (voir DateTimePickerField.tsx).
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: (props: { onChange: (event: { type: string }, date?: Date) => void }) => (
+      <View testID="mock-datetimepicker" onChange={props.onChange} />
+    ),
+  };
+});
+
+/** Simule le choix d'une date/heure dans le sélecteur natif (mocké ci-dessus) pour le champ `label`. */
+function choisirDateHeure(label: string, isoValue: string) {
+  const [datePart, heurePart] = isoValue.split('T');
+  const [annee, mois, jour] = datePart.split('-').map(Number);
+  const [heure, minute] = heurePart.split(':').map(Number);
+
+  fireEvent.press(screen.getByLabelText(label));
+  fireEvent(
+    screen.getByTestId('mock-datetimepicker'),
+    'change',
+    { type: 'set' },
+    new Date(annee, mois - 1, jour, heure, minute)
+  );
+  fireEvent.press(screen.getByLabelText('Valider la date'));
+}
+
 const EXISTING_CRENEAU = {
   id: 'creneau-1',
   terrainId: 'terrain-1',
@@ -109,8 +141,8 @@ describe('CreneauxScreen', () => {
     render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.changeText(screen.getByLabelText('Début'), '2026-09-02T10:00');
-    fireEvent.changeText(screen.getByLabelText('Fin'), '2026-09-02T09:00');
+    choisirDateHeure('Début', '2026-09-02T10:00');
+    choisirDateHeure('Fin', '2026-09-02T09:00');
     fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
     fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
 
@@ -122,8 +154,8 @@ describe('CreneauxScreen', () => {
     render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.changeText(screen.getByLabelText('Début'), '2026-09-02T10:00');
-    fireEvent.changeText(screen.getByLabelText('Fin'), '2026-09-02T11:00');
+    choisirDateHeure('Début', '2026-09-02T10:00');
+    choisirDateHeure('Fin', '2026-09-02T11:00');
     fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
     fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
 
@@ -179,13 +211,15 @@ describe('CreneauxScreen', () => {
     render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.changeText(screen.getByLabelText('Début'), '2026-09-02T10:00');
-    fireEvent.changeText(screen.getByLabelText('Fin'), '2026-09-02T11:00');
+    choisirDateHeure('Début', '2026-09-02T10:00');
+    choisirDateHeure('Fin', '2026-09-02T11:00');
     fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
     fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
 
     expect(await screen.findByText(/l'ajout du créneau a échoué/i)).toBeTruthy();
-    expect(screen.getByLabelText('Début').props.value).toBe('2026-09-02T10:00');
+    // Le champ garde la date choisie plutôt que d'être vidé après un échec — même intention que
+    // l'ancienne assertion sur `.props.value`, adaptée au nouveau champ (Pressable, plus TextInput).
+    expect(screen.getByText('2026-09-02T10:00')).toBeTruthy();
   });
 
   // TC-005-11 (rapport-qa.md) : comportement documenté en commentaire ("ne referme le mode

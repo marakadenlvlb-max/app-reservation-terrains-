@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'r
 import { useSessionToken } from '@app/auth-core';
 import { useCreneaux, type Creneau } from '@app/annonces-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
+import { DateTimePickerField } from '../components/DateTimePickerField';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
@@ -20,10 +21,9 @@ const STATUT_LABELS: Record<string, string> = {
  * dans RegisterScreen/LoginScreen. Une fois le routing choisi, `terrainId` viendra des paramètres
  * de route au lieu d'être passé manuellement.
  *
- * Saisie des dates en texte ("AAAA-MM-JJTHH:MM") plutôt qu'un vrai sélecteur natif
- * (@react-native-community/datetimepicker) : à remplacer avant mise en production pour une
- * meilleure UX, ajouté ici en dépendance minimale pour rester cohérent avec le format web
- * (input datetime-local) sans dépendance native supplémentaire pour cette V1.
+ * Saisie de "Début"/"Fin" via un vrai sélecteur natif (@react-native-community/datetimepicker,
+ * voir DateTimePickerField) — équivalent mobile de l'input HTML `datetime-local` déjà utilisé côté
+ * web. Le format produit (AAAA-MM-JJTHH:MM) reste identique, seule l'UI de saisie a changé.
  */
 export function CreneauxScreen({ terrainId }: { terrainId: string }) {
   // BUG-004 (rapport-qa.md, corrigé le 31 août 2026) : useSessionToken élimine à la racine le
@@ -107,29 +107,9 @@ export function CreneauxScreen({ terrainId }: { terrainId: string }) {
       <View className="gap-4">
         <Text className="text-lg font-semibold">Ajouter un créneau</Text>
 
-        <View className="gap-1">
-          <Text className="text-sm font-medium">Début (AAAA-MM-JJTHH:MM)</Text>
-          <TextInput
-            accessibilityLabel="Début"
-            value={debut}
-            onChangeText={setDebut}
-            placeholder="2026-09-01T18:00"
-            className="rounded border border-gray-300 px-3 py-2"
-          />
-          {errors.debut && <Text className="text-sm text-red-600">{errors.debut}</Text>}
-        </View>
+        <DateTimePickerField label="Début" value={debut} onChange={setDebut} error={errors.debut} />
 
-        <View className="gap-1">
-          <Text className="text-sm font-medium">Fin (AAAA-MM-JJTHH:MM)</Text>
-          <TextInput
-            accessibilityLabel="Fin"
-            value={fin}
-            onChangeText={setFin}
-            placeholder="2026-09-01T19:00"
-            className="rounded border border-gray-300 px-3 py-2"
-          />
-          {errors.fin && <Text className="text-sm text-red-600">{errors.fin}</Text>}
-        </View>
+        <DateTimePickerField label="Fin" value={fin} onChange={setFin} error={errors.fin} />
 
         <View className="gap-1">
           <Text className="text-sm font-medium">Tarif</Text>
@@ -212,18 +192,8 @@ function CreneauRow({ creneau, updating, removing, onSave, onRemove }: CreneauRo
 
   return (
     <View className="mt-2 gap-2 rounded border border-gray-200 px-3 py-2">
-      <TextInput
-        accessibilityLabel={`Début du créneau du ${creneau.debut}`}
-        value={debut}
-        onChangeText={setDebut}
-        className="rounded border border-gray-300 px-2 py-1"
-      />
-      <TextInput
-        accessibilityLabel={`Fin du créneau du ${creneau.debut}`}
-        value={fin}
-        onChangeText={setFin}
-        className="rounded border border-gray-300 px-2 py-1"
-      />
+      <DateTimePickerField label={`Début du créneau du ${creneau.debut}`} value={debut} onChange={setDebut} />
+      <DateTimePickerField label={`Fin du créneau du ${creneau.debut}`} value={fin} onChange={setFin} />
       <TextInput
         accessibilityLabel={`Tarif du créneau du ${creneau.debut}`}
         value={tarif}
