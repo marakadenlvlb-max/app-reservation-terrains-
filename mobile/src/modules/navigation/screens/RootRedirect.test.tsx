@@ -23,13 +23,13 @@ beforeEach(() => {
 describe('RootRedirect', () => {
   it('redirige vers /accueil pour un utilisateur connecté', async () => {
     mockSecureStore.set('auth_token', 'token-123');
-    render(<RootRedirect />);
+    await render(<RootRedirect />);
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/accueil'));
   });
 
   it('redirige vers /connexion pour un utilisateur non connecté', async () => {
-    render(<RootRedirect />);
+    await render(<RootRedirect />);
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/connexion'));
   });

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { getItemAsync } from 'expo-secure-store';
 import { CreateTerrainScreen } from './CreateTerrainScreen';
 
 const mockSecureStore = new Map<string, string>();
@@ -82,10 +83,10 @@ describe('CreateTerrainScreen', () => {
   it("affiche les erreurs de validation et n'appelle pas l'API si sport/adresse manquent", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<CreateTerrainScreen />);
+    await render(<CreateTerrainScreen />);
     await flushToken();
 
-    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await fireEvent.press(screen.getByLabelText("Publier l'annonce"));
 
     expect(await screen.findByText(/sélectionne le sport/i)).toBeTruthy();
     expect(screen.getByText(/adresse est requise/i)).toBeTruthy();
@@ -94,27 +95,27 @@ describe('CreateTerrainScreen', () => {
 
   it('publie une annonce valide et passe à la section photos', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreateTerrainScreen />);
+    await render(<CreateTerrainScreen />);
     await flushToken();
 
-    fireEvent.press(screen.getByLabelText('Foot'));
-    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
-    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await fireEvent.press(screen.getByLabelText('Foot'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    await fireEvent.press(screen.getByLabelText("Publier l'annonce"));
 
     expect(await screen.findByText(/annonce publiée/i)).toBeTruthy();
   });
 
   it('sélectionne et envoie une photo une fois le terrain créé', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreateTerrainScreen />);
+    await render(<CreateTerrainScreen />);
     await flushToken();
 
-    fireEvent.press(screen.getByLabelText('Basket'));
-    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
-    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await fireEvent.press(screen.getByLabelText('Basket'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    await fireEvent.press(screen.getByLabelText("Publier l'annonce"));
     await screen.findByText(/annonce publiée/i);
 
-    fireEvent.press(screen.getByLabelText('Ajouter une photo'));
+    await fireEvent.press(screen.getByLabelText('Ajouter une photo'));
 
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
@@ -128,12 +129,12 @@ describe('CreateTerrainScreen', () => {
   // côté mobile — écart de parité entre les deux suites relevé en session QA.
   it("affiche une erreur si la publication échoue côté API", async () => {
     global.fetch = createFetchMock({ createOk: false }) as unknown as typeof fetch;
-    render(<CreateTerrainScreen />);
+    await render(<CreateTerrainScreen />);
     await flushToken();
 
-    fireEvent.press(screen.getByLabelText('Tennis'));
-    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
-    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await fireEvent.press(screen.getByLabelText('Tennis'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    await fireEvent.press(screen.getByLabelText("Publier l'annonce"));
 
     expect(await screen.findByText(/publication.*échoué/i)).toBeTruthy();
   });
@@ -141,15 +142,15 @@ describe('CreateTerrainScreen', () => {
   // TC-004-06 (rapport-qa.md) : seul le succès de l'upload était testé.
   it("affiche une erreur si l'envoi de la photo échoue, sans bloquer l'écran", async () => {
     global.fetch = createFetchMock({ photoOk: false }) as unknown as typeof fetch;
-    render(<CreateTerrainScreen />);
+    await render(<CreateTerrainScreen />);
     await flushToken();
 
-    fireEvent.press(screen.getByLabelText('Foot'));
-    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
-    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await fireEvent.press(screen.getByLabelText('Foot'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    await fireEvent.press(screen.getByLabelText("Publier l'annonce"));
     await screen.findByText(/annonce publiée/i);
 
-    fireEvent.press(screen.getByLabelText('Ajouter une photo'));
+    await fireEvent.press(screen.getByLabelText('Ajouter une photo'));
 
     expect(await screen.findByText(/l'envoi de la photo a échoué/i)).toBeTruthy();
     expect(screen.getByLabelText('Ajouter une photo')).toBeTruthy();
@@ -160,19 +161,33 @@ describe('CreateTerrainScreen', () => {
   it("désactive \"Publier l'annonce\" tant que le token de session n'est pas encore résolu", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<CreateTerrainScreen />);
-    // Pas de flushToken() ici : c'est précisément le moment où BUG-003 provoquait un faux rejet.
 
-    fireEvent.press(screen.getByLabelText('Foot'));
-    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
+    // RTL v14 (`render`/`fireEvent` async, cf. React 19) draine les micro-tâches en attente à
+    // chaque `act()` interne — le `Promise.resolve()` par défaut de `getItemAsync` (mocké plus
+    // haut) résoudrait donc avant même la première assertion, rendant impossible d'observer l'état
+    // transitoire "token pas encore résolu" qu'on veut vérifier ici. On le remplace, pour ce test
+    // seulement, par une promesse qu'on ne résout que nous-mêmes, une fois les assertions faites.
+    let resolveToken!: (value: string | null) => void;
+    (getItemAsync as jest.Mock).mockImplementationOnce(
+      () => new Promise<string | null>((resolve) => { resolveToken = resolve; })
+    );
+
+    await render(<CreateTerrainScreen />);
+    // Pas de résolution du token ici : c'est précisément le moment où BUG-003 provoquait un faux rejet.
+
+    await fireEvent.press(screen.getByLabelText('Foot'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 12, Dakar');
     expect(screen.getByLabelText("Publier l'annonce").props.accessibilityState.disabled).toBe(true);
-    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await fireEvent.press(screen.getByLabelText("Publier l'annonce"));
     expect(screen.queryByText(/connecte-toi pour publier/i)).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
 
     // Une fois le token résolu (session bien valide), la publication doit fonctionner normalement.
-    await flushToken();
-    fireEvent.press(screen.getByLabelText("Publier l'annonce"));
+    await act(async () => {
+      resolveToken('token-123');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await fireEvent.press(screen.getByLabelText("Publier l'annonce"));
 
     expect(await screen.findByText(/annonce publiée/i)).toBeTruthy();
   });

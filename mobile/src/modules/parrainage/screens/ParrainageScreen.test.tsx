@@ -29,7 +29,7 @@ beforeEach(() => {
 describe('ParrainageScreen', () => {
   it('affiche le code de parrainage et la liste des filleuls', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => RESUME })) as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     expect(await screen.findByText('AWA1234')).toBeTruthy();
     expect(screen.getByText(/moussa ba/i)).toBeTruthy();
@@ -39,7 +39,7 @@ describe('ParrainageScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => ({ codeParrainage: 'AWA1234', filleuls: [] }) })
     ) as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     expect(await screen.findByText(/n'as encore parrainé personne/i)).toBeTruthy();
   });
@@ -52,18 +52,18 @@ describe('ParrainageScreen', () => {
       return Promise.resolve({ ok: true, json: async () => ({ codeParrainage: 'AWA1234', filleuls: [] }) });
     });
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     await screen.findByText('AWA1234');
-    fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'MOU5678');
-    fireEvent.press(screen.getByLabelText('Utiliser'));
+    await fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'MOU5678');
+    await fireEvent.press(screen.getByLabelText('Utiliser'));
 
     expect(await screen.findByText(/code accepté/i)).toBeTruthy();
   });
 
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
     mockSecureStore.clear();
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
@@ -77,11 +77,11 @@ describe('ParrainageScreen', () => {
       return Promise.resolve({ ok: true, json: async () => ({ codeParrainage: 'AWA1234', filleuls: [] }) });
     });
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     await screen.findByText('AWA1234');
-    fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'INVALIDE');
-    fireEvent.press(screen.getByLabelText('Utiliser'));
+    await fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'INVALIDE');
+    await fireEvent.press(screen.getByLabelText('Utiliser'));
 
     expect(await screen.findByText(/invalide/i)).toBeTruthy();
     // Le champ n'est PAS vidé après un échec — l'utilisateur doit pouvoir corriger sans retaper.
@@ -92,7 +92,7 @@ describe('ParrainageScreen', () => {
   // notifications, messagerie, recommandations) manquait pour le parrainage lui-même.
   it('affiche une erreur si le chargement du résumé de parrainage échoue', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     expect(await screen.findByText(/impossible de charger ton parrainage/i)).toBeTruthy();
   });
@@ -106,11 +106,11 @@ describe('ParrainageScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => ({ codeParrainage: 'AWA1234', filleuls: [] }) });
     }) as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     await screen.findByText('AWA1234');
-    fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'MOU5678');
-    fireEvent.press(screen.getByLabelText('Utiliser'));
+    await fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'MOU5678');
+    await fireEvent.press(screen.getByLabelText('Utiliser'));
 
     await screen.findByText(/code accepté/i);
     expect(screen.getByLabelText('Code de parrainage').props.value).toBe('');
@@ -126,11 +126,11 @@ describe('ParrainageScreen', () => {
       if (options?.method === 'POST') return pending;
       return Promise.resolve({ ok: true, json: async () => ({ codeParrainage: 'AWA1234', filleuls: [] }) });
     }) as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     await screen.findByText('AWA1234');
-    fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'MOU5678');
-    fireEvent.press(screen.getByLabelText('Utiliser'));
+    await fireEvent.changeText(screen.getByLabelText('Code de parrainage'), 'MOU5678');
+    await fireEvent.press(screen.getByLabelText('Utiliser'));
 
     const bouton = await screen.findByLabelText('Utiliser');
     expect(bouton.props.accessibilityState.disabled).toBe(true);
@@ -152,7 +152,7 @@ describe('ParrainageScreen', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     expect(await screen.findByText(/fatou sow/i)).toBeTruthy();
     expect(screen.getByText(/^en attente$/i)).toBeTruthy();
@@ -180,7 +180,7 @@ describe('ParrainageScreen', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<ParrainageScreen />);
+    await render(<ParrainageScreen />);
 
     expect(await screen.findByText(/ousmane fall/i)).toBeTruthy();
     expect(screen.getByText(/^avantage utilisé$/i)).toBeTruthy();

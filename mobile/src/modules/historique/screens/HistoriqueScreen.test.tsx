@@ -60,7 +60,7 @@ describe('HistoriqueScreen', () => {
   ])('charge le bon endpoint et affiche le bon titre pour le rôle %s', async ({ role, url, titre }) => {
     const fetchMock = jest.fn(() => Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] }));
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<HistoriqueScreen role={role} />);
+    await render(<HistoriqueScreen role={role} />);
 
     expect(await screen.findByText(titre)).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(url), expect.any(Object));
@@ -70,7 +70,7 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
     expect(screen.getAllByText(/noter cette session/i)).toHaveLength(1);
@@ -81,24 +81,24 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_PASSEE] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/moussa ba/i);
-    fireEvent.press(screen.getByText(/noter cette session/i));
+    await fireEvent.press(screen.getByText(/noter cette session/i));
 
     expect(pushMock).toHaveBeenCalledWith('/reservations/reservation-2/noter/user-3');
   });
 
   it("affiche un message clair quand il n'y a encore aucune réservation", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [] })) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     expect(await screen.findByText(/aucune réservation/i)).toBeTruthy();
   });
 
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
     mockSecureStore.clear();
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
@@ -107,7 +107,7 @@ describe('HistoriqueScreen', () => {
   // notifications) manquait pour l'historique lui-même.
   it("affiche une erreur si le chargement de l'historique échoue", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     expect(await screen.findByText(/impossible de charger ton historique/i)).toBeTruthy();
   });
@@ -116,7 +116,7 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
     expect(screen.getAllByText(/envoyer un message/i)).toHaveLength(2);
@@ -127,10 +127,10 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
-    fireEvent.press(screen.getByText(/envoyer un message/i));
+    await fireEvent.press(screen.getByText(/envoyer un message/i));
 
     expect(pushMock).toHaveBeenCalledWith('/reservations/reservation-1/messages');
   });
@@ -144,10 +144,10 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role={role} />);
+    await render(<HistoriqueScreen role={role} />);
 
     await screen.findByText(/awa diallo/i);
-    fireEvent.press(screen.getByText(/voir/i));
+    await fireEvent.press(screen.getByText(/voir/i));
 
     expect(pushMock).toHaveBeenCalledWith(routeAttendue);
   });
@@ -156,7 +156,7 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR, RESERVATION_PASSEE] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
     expect(screen.getAllByLabelText(/annuler ma réservation/i)).toHaveLength(1);
@@ -164,7 +164,7 @@ describe('HistoriqueScreen', () => {
 
   it("ne propose pas l'annulation côté propriétaire (RF-021 réservée au joueur)", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="proprietaire" />);
+    await render(<HistoriqueScreen role="proprietaire" />);
 
     await screen.findByText(/awa diallo/i);
     expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull();
@@ -177,7 +177,7 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="proprietaire" />);
+    await render(<HistoriqueScreen role="proprietaire" />);
 
     expect(await screen.findByText(/joueur\s*:\s*awa diallo/i)).toBeTruthy();
     expect(screen.getByText(/2099-09-01T18:00:00Z/)).toBeTruthy();
@@ -194,10 +194,10 @@ describe('HistoriqueScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
     }) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
-    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+    await fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
 
     expect(await screen.findByText(/remboursement en cours via wave/i)).toBeTruthy();
     await waitFor(() => expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull());
@@ -211,10 +211,10 @@ describe('HistoriqueScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
     }) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
-    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+    await fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
 
     expect(await screen.findByText(/l'annulation a échoué/i)).toBeTruthy();
     // La réservation reste inchangée : toujours "Confirmée", bouton toujours disponible.
@@ -234,10 +234,10 @@ describe('HistoriqueScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
     }) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
-    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+    await fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
 
     const bouton = await screen.findByLabelText(/annuler ma réservation/i);
     expect(bouton.props.accessibilityState.disabled).toBe(true);
@@ -256,7 +256,7 @@ describe('HistoriqueScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [RESERVATION_EN_ATTENTE] })
     ) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/fatou sow/i);
     expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull();
@@ -274,10 +274,10 @@ describe('HistoriqueScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => [RESERVATION_A_VENIR] });
     }) as unknown as typeof fetch;
-    render(<HistoriqueScreen role="joueur" />);
+    await render(<HistoriqueScreen role="joueur" />);
 
     await screen.findByText(/awa diallo/i);
-    fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
+    await fireEvent.press(screen.getByLabelText(/annuler ma réservation/i));
 
     expect(await screen.findByText(/aucun remboursement/i)).toBeTruthy();
     await waitFor(() => expect(screen.queryByLabelText(/annuler ma réservation/i)).toBeNull());

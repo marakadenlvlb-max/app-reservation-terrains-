@@ -61,17 +61,17 @@ beforeEach(() => {
 describe('NotificationsScreen', () => {
   it('affiche les notifications reçues', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     expect(await screen.findByText('Réservation confirmée')).toBeTruthy();
   });
 
   it('marque une notification comme lue', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     await screen.findByText('Réservation confirmée');
-    fireEvent.press(screen.getByLabelText(/marquer comme lue/i));
+    await fireEvent.press(screen.getByLabelText(/marquer comme lue/i));
 
     // fireEvent est synchrone : il ne faut pas s'attendre à ce que le passage de `lue` à `true`
     // (piloté par un appel API asynchrone dans markAsRead) soit déjà appliqué juste après.
@@ -80,7 +80,7 @@ describe('NotificationsScreen', () => {
 
   it("affiche un message clair quand il n'y a encore aucune notification", async () => {
     global.fetch = createFetchMock({ list: [] }) as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     expect(await screen.findByText(/aucune notification/i)).toBeTruthy();
   });
@@ -88,7 +88,7 @@ describe('NotificationsScreen', () => {
   it('enregistre le jeton push une fois la permission accordée', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     await screen.findByText('Réservation confirmée');
 
@@ -105,7 +105,7 @@ describe('NotificationsScreen', () => {
   // le mobile jusqu'ici (seule la fixture de confirmation était utilisée dans ce fichier).
   it('affiche une notification de rappel de créneau avec son libellé (RF-020)', async () => {
     global.fetch = createFetchMock({ list: [NOTIF_RAPPEL] }) as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     expect(await screen.findByText('Rappel de créneau')).toBeTruthy();
     expect(screen.getByText(/1 heure/i)).toBeTruthy();
@@ -118,7 +118,7 @@ describe('NotificationsScreen', () => {
     (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'denied' });
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     await screen.findByText('Réservation confirmée');
 
@@ -137,7 +137,7 @@ describe('NotificationsScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => [NOTIF_CONFIRMATION] });
     }) as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     expect(await screen.findByText(/impossible d'activer les notifications push/i)).toBeTruthy();
     // Non bloquant : le journal in-app reste normalement consultable malgré l'échec du push.
@@ -153,7 +153,7 @@ describe('NotificationsScreen', () => {
       }
       return Promise.resolve({ ok: false, json: async () => null });
     }) as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     expect(await screen.findByText(/impossible de charger tes notifications/i)).toBeTruthy();
   });
@@ -171,10 +171,10 @@ describe('NotificationsScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => [NOTIF_CONFIRMATION] });
     }) as unknown as typeof fetch;
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     await screen.findByText('Réservation confirmée');
-    fireEvent.press(screen.getByLabelText(/marquer comme lue/i));
+    await fireEvent.press(screen.getByLabelText(/marquer comme lue/i));
 
     expect(await screen.findByLabelText(/marquer comme lue/i)).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
@@ -183,7 +183,7 @@ describe('NotificationsScreen', () => {
   // TC-020-07 (rapport-qa.md) : trou de parité mobile — testé côté web mais pas mobile.
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
     mockSecureStore.clear();
-    render(<NotificationsScreen />);
+    await render(<NotificationsScreen />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });

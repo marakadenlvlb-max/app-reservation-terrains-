@@ -56,7 +56,7 @@ beforeEach(() => {
 describe('ProfileScreen', () => {
   it('charge et affiche le profil existant', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     expect(await screen.findByDisplayValue('Awa Diallo')).toBeTruthy();
     expect(screen.getByDisplayValue('Dakar')).toBeTruthy();
@@ -64,32 +64,32 @@ describe('ProfileScreen', () => {
 
   it('affiche une erreur de validation si le nom est vidé', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     await screen.findByDisplayValue('Awa Diallo');
-    fireEvent.changeText(screen.getByLabelText('Nom'), '');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.changeText(screen.getByLabelText('Nom'), '');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/le nom est requis/i)).toBeTruthy();
   });
 
   it('enregistre les modifications et affiche une confirmation', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     await screen.findByDisplayValue('Awa Diallo');
-    fireEvent.changeText(screen.getByLabelText('Ville'), 'Abidjan');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.changeText(screen.getByLabelText('Ville'), 'Abidjan');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/profil mis à jour/i)).toBeTruthy();
   });
 
   it('sélectionne et envoie une nouvelle photo de profil', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     await screen.findByDisplayValue('Awa Diallo');
-    fireEvent.press(screen.getByLabelText('Changer la photo de profil'));
+    await fireEvent.press(screen.getByLabelText('Changer la photo de profil'));
 
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
@@ -103,11 +103,11 @@ describe('ProfileScreen', () => {
   // aussi requis par validateProfilePayload, n'avait aucun cas dédié.
   it('affiche une erreur de validation si tous les sports sont décochés', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     await screen.findByDisplayValue('Awa Diallo');
-    fireEvent.press(screen.getByLabelText('Foot')); // décoche l'unique sport déjà sélectionné
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.press(screen.getByLabelText('Foot')); // décoche l'unique sport déjà sélectionné
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/sélectionne au moins un sport/i)).toBeTruthy();
   });
@@ -115,7 +115,7 @@ describe('ProfileScreen', () => {
   // TC-003-06 (rapport-qa.md) : seul le succès du chargement était testé.
   it('affiche une erreur bloquante si le chargement du profil échoue', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     expect(await screen.findByText(/profil/i)).toBeTruthy();
   });
@@ -129,11 +129,11 @@ describe('ProfileScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => PROFILE });
     }) as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     await screen.findByDisplayValue('Awa Diallo');
-    fireEvent.changeText(screen.getByLabelText('Ville'), 'Abidjan');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.changeText(screen.getByLabelText('Ville'), 'Abidjan');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/mise à jour a échoué/i)).toBeTruthy();
     expect(screen.getByDisplayValue('Abidjan')).toBeTruthy();
@@ -147,10 +147,10 @@ describe('ProfileScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => PROFILE });
     }) as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     await screen.findByDisplayValue('Awa Diallo');
-    fireEvent.press(screen.getByLabelText('Changer la photo de profil'));
+    await fireEvent.press(screen.getByLabelText('Changer la photo de profil'));
 
     expect(await screen.findByText(/l'envoi de la photo a échoué/i)).toBeTruthy();
     expect(screen.getByDisplayValue('Awa Diallo')).toBeTruthy();
@@ -160,7 +160,7 @@ describe('ProfileScreen', () => {
   // authentifié ne doit jamais voir "Connecte-toi..." s'afficher, même brièvement, au chargement.
   it("n'affiche jamais le message de connexion pour un utilisateur déjà authentifié", async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<ProfileScreen />);
+    await render(<ProfileScreen />);
 
     expect(screen.queryByText(/connecte-toi/i)).toBeNull();
 

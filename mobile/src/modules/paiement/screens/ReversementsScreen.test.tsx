@@ -48,7 +48,7 @@ describe('ReversementsScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [REVERSEMENT_EFFECTUE] })
     ) as unknown as typeof fetch;
-    render(<ReversementsScreen />);
+    await render(<ReversementsScreen />);
 
     expect(await screen.findByText(/net 13500/i)).toBeTruthy();
     expect(screen.getByText(/wave.*effectué/i)).toBeTruthy();
@@ -57,13 +57,13 @@ describe('ReversementsScreen', () => {
   it("affiche un message clair quand il n'y a encore aucun reversement", async () => {
     mockSecureStore.set('auth_token', 'token-123');
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [] })) as unknown as typeof fetch;
-    render(<ReversementsScreen />);
+    await render(<ReversementsScreen />);
 
     expect(await screen.findByText(/aucun reversement/i)).toBeTruthy();
   });
 
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
-    render(<ReversementsScreen />);
+    await render(<ReversementsScreen />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
@@ -72,7 +72,7 @@ describe('ReversementsScreen', () => {
   it('affiche une erreur si le chargement échoue', async () => {
     mockSecureStore.set('auth_token', 'token-123');
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<ReversementsScreen />);
+    await render(<ReversementsScreen />);
 
     expect(await screen.findByText(/impossible de charger/i)).toBeTruthy();
   });
@@ -83,7 +83,7 @@ describe('ReversementsScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [REVERSEMENT_EN_ATTENTE] })
     ) as unknown as typeof fetch;
-    render(<ReversementsScreen />);
+    await render(<ReversementsScreen />);
 
     expect(await screen.findByText(/2026-08-30T10:00:00Z/)).toBeTruthy();
   });

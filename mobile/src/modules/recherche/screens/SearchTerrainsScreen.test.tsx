@@ -39,9 +39,9 @@ describe('SearchTerrainsScreen', () => {
   it("effectue une recherche sans nécessiter de session", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     expect(await screen.findByText(/rue 12, dakar/i)).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -52,11 +52,11 @@ describe('SearchTerrainsScreen', () => {
   it('navigue vers le détail du terrain au clic sur un résultat', async () => {
     pushMock.mockReset();
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
     await screen.findByText(/rue 12, dakar/i);
-    fireEvent.press(screen.getByText(/rue 12, dakar/i));
+    await fireEvent.press(screen.getByText(/rue 12, dakar/i));
 
     expect(pushMock).toHaveBeenCalledWith('/terrains/terrain-1');
   });
@@ -64,10 +64,10 @@ describe('SearchTerrainsScreen', () => {
   it('envoie le sport sélectionné dans la requête', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Foot'));
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Foot'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     await screen.findByText(/rue 12, dakar/i);
     expect(fetchMock.mock.calls[0][0]).toContain('sport=foot');
@@ -78,10 +78,10 @@ describe('SearchTerrainsScreen', () => {
   it('envoie la localisation saisie dans la requête', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Localisation'), 'Dakar');
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.changeText(screen.getByLabelText('Localisation'), 'Dakar');
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     await screen.findByText(/rue 12, dakar/i);
     expect(fetchMock.mock.calls[0][0]).toContain('localisation=Dakar');
@@ -91,10 +91,10 @@ describe('SearchTerrainsScreen', () => {
   it('envoie la date saisie dans la requête', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Date'), '2026-09-01');
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.changeText(screen.getByLabelText('Date'), '2026-09-01');
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     await screen.findByText(/rue 12, dakar/i);
     expect(fetchMock.mock.calls[0][0]).toContain('date=2026-09-01');
@@ -104,10 +104,10 @@ describe('SearchTerrainsScreen', () => {
   it("envoie l'heure saisie dans la requête", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Heure'), '18:00');
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.changeText(screen.getByLabelText('Heure'), '18:00');
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     await screen.findByText(/rue 12, dakar/i);
     expect(fetchMock.mock.calls[0][0]).toContain('heure=18%3A00');
@@ -115,18 +115,18 @@ describe('SearchTerrainsScreen', () => {
 
   it('affiche un message clair quand aucun créneau ne correspond', async () => {
     global.fetch = createFetchMock({ results: [] }) as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     expect(await screen.findByText(/aucun créneau disponible/i)).toBeTruthy();
   });
 
   it('affiche une erreur si la recherche échoue', async () => {
     global.fetch = createFetchMock({ ok: false }) as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     expect(await screen.findByText(/recherche a échoué/i)).toBeTruthy();
   });
@@ -134,9 +134,9 @@ describe('SearchTerrainsScreen', () => {
   it('inclut la position GPS dans la recherche une fois le tri par proximité activé (US-09)', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Trier par proximité'));
+    await fireEvent.press(screen.getByLabelText('Trier par proximité'));
 
     await screen.findByText(/rue 12, dakar/i);
     expect(fetchMock.mock.calls[0][0]).toContain('latitude=14.7167');
@@ -145,9 +145,9 @@ describe('SearchTerrainsScreen', () => {
 
   it('affiche la distance renvoyée par le backend quand elle est présente', async () => {
     global.fetch = createFetchMock({ results: [{ ...RESULTAT, distanceKm: 2.3 }] }) as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     expect(await screen.findByText(/à 2\.3 km/)).toBeTruthy();
   });
@@ -155,12 +155,12 @@ describe('SearchTerrainsScreen', () => {
   it('envoie le prix max et les équipements sélectionnés dans la requête (US-23 / RF-022)', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Prix max'), '20000');
-    fireEvent.press(screen.getByLabelText('Vestiaires'));
-    fireEvent.press(screen.getByLabelText('Éclairage'));
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.changeText(screen.getByLabelText('Prix max'), '20000');
+    await fireEvent.press(screen.getByLabelText('Vestiaires'));
+    await fireEvent.press(screen.getByLabelText('Éclairage'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     await screen.findByText(/rue 12, dakar/i);
     expect(fetchMock.mock.calls[0][0]).toContain('prixMax=20000');
@@ -172,18 +172,18 @@ describe('SearchTerrainsScreen', () => {
   it('retire un équipement décoché de la sélection et de la requête envoyée', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
     const vestiaires = screen.getByLabelText('Vestiaires');
     const eclairage = screen.getByLabelText('Éclairage');
-    fireEvent.press(vestiaires);
-    fireEvent.press(eclairage);
+    await fireEvent.press(vestiaires);
+    await fireEvent.press(eclairage);
     // On décoche vestiaires : seul éclairage doit rester sélectionné et envoyé.
-    fireEvent.press(vestiaires);
+    await fireEvent.press(vestiaires);
     expect(screen.getByLabelText('Vestiaires').props.accessibilityState.checked).toBe(false);
     expect(screen.getByLabelText('Éclairage').props.accessibilityState.checked).toBe(true);
 
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     await screen.findByText(/rue 12, dakar/i);
     expect(fetchMock.mock.calls[0][0]).toContain('equipements=eclairage');
@@ -193,17 +193,17 @@ describe('SearchTerrainsScreen', () => {
   it("désactive le filtre de distance max tant que la position GPS n'est pas connue, puis l'active une fois acquise", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
     expect(screen.getByLabelText('Distance max (km)').props.editable).toBe(false);
 
-    fireEvent.press(screen.getByLabelText('Trier par proximité'));
+    await fireEvent.press(screen.getByLabelText('Trier par proximité'));
     await screen.findByText(/rue 12, dakar/i);
 
     expect(screen.getByLabelText('Distance max (km)').props.editable).toBe(true);
 
-    fireEvent.changeText(screen.getByLabelText('Distance max (km)'), '5');
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.changeText(screen.getByLabelText('Distance max (km)'), '5');
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     await screen.findByText(/rue 12, dakar/i);
     const dernierAppel = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
@@ -215,9 +215,9 @@ describe('SearchTerrainsScreen', () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
     (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValueOnce({ granted: false });
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Trier par proximité'));
+    await fireEvent.press(screen.getByLabelText('Trier par proximité'));
 
     expect(await screen.findByText(/autorise la localisation/i)).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -227,9 +227,9 @@ describe('SearchTerrainsScreen', () => {
   it("affiche un message clair quand l'acquisition de la position échoue de façon inattendue", async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
     (Location.getCurrentPositionAsync as jest.Mock).mockRejectedValueOnce(new Error('GPS indisponible'));
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Trier par proximité'));
+    await fireEvent.press(screen.getByLabelText('Trier par proximité'));
 
     expect(await screen.findByText(/impossible de récupérer ta position/i)).toBeTruthy();
   });
@@ -238,9 +238,9 @@ describe('SearchTerrainsScreen', () => {
     global.fetch = createFetchMock({
       results: [{ ...RESULTAT, equipements: ['vestiaires', 'eclairage'] }],
     }) as unknown as typeof fetch;
-    render(<SearchTerrainsScreen />);
+    await render(<SearchTerrainsScreen />);
 
-    fireEvent.press(screen.getByLabelText('Rechercher'));
+    await fireEvent.press(screen.getByLabelText('Rechercher'));
 
     expect(await screen.findByText(/vestiaires, éclairage/i)).toBeTruthy();
   });

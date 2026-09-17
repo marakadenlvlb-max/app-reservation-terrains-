@@ -22,13 +22,13 @@ beforeEach(() => {
 
 describe('ReserverCreneauBouton', () => {
   it("invite à se connecter si l'utilisateur n'a pas de session, avec un lien réel", async () => {
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
     const lien = await screen.findByText(/connecte-toi pour réserver/i);
     expect(lien).toBeTruthy();
 
     // US-29 : ce texte n'était pas navigable avant (simple <Text>).
-    fireEvent.press(lien);
+    await fireEvent.press(lien);
     expect(pushMock).toHaveBeenCalledWith('/connexion');
   });
 
@@ -49,9 +49,9 @@ describe('ReserverCreneauBouton', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    fireEvent.press(await screen.findByLabelText('Réserver'));
+    await fireEvent.press(await screen.findByLabelText('Réserver'));
 
     expect(await screen.findByText(/créneau verrouillé/i)).toBeTruthy();
     expect(screen.getByText(/9:5\d|10:00/)).toBeTruthy();
@@ -62,9 +62,9 @@ describe('ReserverCreneauBouton', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: false, json: async () => ({ message: 'Ce créneau est déjà réservé.' }) })
     ) as unknown as typeof fetch;
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    fireEvent.press(await screen.findByLabelText('Réserver'));
+    await fireEvent.press(await screen.findByLabelText('Réserver'));
 
     expect(await screen.findByText(/déjà réservé/i)).toBeTruthy();
   });
@@ -88,9 +88,9 @@ describe('ReserverCreneauBouton', () => {
         }),
       });
     }) as unknown as typeof fetch;
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    fireEvent.press(await screen.findByLabelText('Réserver'));
+    await fireEvent.press(await screen.findByLabelText('Réserver'));
 
     expect(await screen.findByText(/réservation confirmée/i)).toBeTruthy();
   });
@@ -117,9 +117,9 @@ describe('ReserverCreneauBouton', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    fireEvent.press(await screen.findByLabelText('Réserver'));
+    await fireEvent.press(await screen.findByLabelText('Réserver'));
 
     expect(await screen.findByText(/délai a expiré/i)).toBeTruthy();
   });
@@ -132,9 +132,9 @@ describe('ReserverCreneauBouton', () => {
       resolveFetch = resolve;
     });
     global.fetch = jest.fn(() => pending) as unknown as typeof fetch;
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    fireEvent.press(await screen.findByLabelText('Réserver'));
+    await fireEvent.press(await screen.findByLabelText('Réserver'));
 
     const bouton = await screen.findByLabelText('Réserver');
     expect(bouton.props.accessibilityState.disabled).toBe(true);
@@ -180,9 +180,9 @@ describe('ReserverCreneauBouton', () => {
       }
       return Promise.resolve({ ok: false, json: async () => null });
     }) as unknown as typeof fetch;
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    fireEvent.press(await screen.findByLabelText('Réserver'));
+    await fireEvent.press(await screen.findByLabelText('Réserver'));
 
     expect(await screen.findByText(/créneau verrouillé/i)).toBeTruthy();
     expect(await screen.findByText(/impossible de vérifier le statut/i)).toBeTruthy();
@@ -207,9 +207,9 @@ describe('ReserverCreneauBouton', () => {
         }),
       });
     }) as unknown as typeof fetch;
-    render(<ReserverCreneauBouton creneauId="creneau-1" />);
+    await render(<ReserverCreneauBouton creneauId="creneau-1" />);
 
-    fireEvent.press(await screen.findByLabelText('Réserver'));
+    await fireEvent.press(await screen.findByLabelText('Réserver'));
 
     expect(await screen.findByText(/réservation a été annulée/i)).toBeTruthy();
   });

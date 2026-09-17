@@ -36,7 +36,7 @@ describe('RecommandationsScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [TERRAIN_RECOMMANDE] })
     ) as unknown as typeof fetch;
-    render(<RecommandationsScreen />);
+    await render(<RecommandationsScreen />);
 
     expect(await screen.findByText(/rue 12, dakar/i)).toBeTruthy();
     expect(screen.getByText(/12000/)).toBeTruthy();
@@ -47,24 +47,24 @@ describe('RecommandationsScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => [TERRAIN_RECOMMANDE] })
     ) as unknown as typeof fetch;
-    render(<RecommandationsScreen />);
+    await render(<RecommandationsScreen />);
 
     await screen.findByText(/rue 12, dakar/i);
-    fireEvent.press(screen.getByText(/rue 12, dakar/i));
+    await fireEvent.press(screen.getByText(/rue 12, dakar/i));
 
     expect(pushMock).toHaveBeenCalledWith('/terrains/terrain-1');
   });
 
   it("affiche un message clair quand il n'y a encore aucune recommandation", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [] })) as unknown as typeof fetch;
-    render(<RecommandationsScreen />);
+    await render(<RecommandationsScreen />);
 
     expect(await screen.findByText(/pas encore de recommandation/i)).toBeTruthy();
   });
 
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
     mockSecureStore.clear();
-    render(<RecommandationsScreen />);
+    await render(<RecommandationsScreen />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
@@ -73,7 +73,7 @@ describe('RecommandationsScreen', () => {
   // notifications, messagerie) manquait pour les recommandations elles-mêmes.
   it('affiche une erreur si le chargement des recommandations échoue', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<RecommandationsScreen />);
+    await render(<RecommandationsScreen />);
 
     expect(await screen.findByText(/impossible de charger tes recommandations/i)).toBeTruthy();
   });

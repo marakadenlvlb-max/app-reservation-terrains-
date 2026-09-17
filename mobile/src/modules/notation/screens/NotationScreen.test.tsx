@@ -44,7 +44,7 @@ beforeEach(() => {
 describe('NotationScreen', () => {
   it('affiche la note actuelle de la cible', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+    await render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
 
     expect(await screen.findByText(/4\.2 \/ 5 \(8 avis\)/)).toBeTruthy();
   });
@@ -52,9 +52,9 @@ describe('NotationScreen', () => {
   it("affiche une erreur si aucune note n'est sélectionnée", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+    await render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
 
-    fireEvent.press(await screen.findByLabelText('Envoyer ma note'));
+    await fireEvent.press(await screen.findByLabelText('Envoyer ma note'));
 
     expect(await screen.findByText(/sélectionne une note/i)).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'POST' }));
@@ -62,21 +62,21 @@ describe('NotationScreen', () => {
 
   it('envoie la notation et affiche une confirmation', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+    await render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
 
-    fireEvent.press(await screen.findByLabelText('5'));
-    fireEvent.changeText(screen.getByLabelText('Commentaire'), 'Super session, très ponctuel.');
-    fireEvent.press(screen.getByLabelText('Envoyer ma note'));
+    await fireEvent.press(await screen.findByLabelText('5'));
+    await fireEvent.changeText(screen.getByLabelText('Commentaire'), 'Super session, très ponctuel.');
+    await fireEvent.press(screen.getByLabelText('Envoyer ma note'));
 
     expect(await screen.findByText(/note a bien été enregistrée/i)).toBeTruthy();
   });
 
   it("affiche une erreur si l'envoi échoue", async () => {
     global.fetch = createFetchMock({ submitOk: false }) as unknown as typeof fetch;
-    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+    await render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
 
-    fireEvent.press(await screen.findByLabelText('4'));
-    fireEvent.press(screen.getByLabelText('Envoyer ma note'));
+    await fireEvent.press(await screen.findByLabelText('4'));
+    await fireEvent.press(screen.getByLabelText('Envoyer ma note'));
 
     expect(await screen.findByText(/envoi de la notation a échoué/i)).toBeTruthy();
   });
@@ -85,7 +85,7 @@ describe('NotationScreen', () => {
   // manquait pour cet écran précis.
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
     mockSecureStore.clear();
-    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+    await render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
 
     expect(await screen.findByText(/connecte-toi pour laisser une note/i)).toBeTruthy();
   });
@@ -95,10 +95,10 @@ describe('NotationScreen', () => {
   it('envoie la notation sans commentaire (champ réellement optionnel)', async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+    await render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
 
-    fireEvent.press(await screen.findByLabelText('5'));
-    fireEvent.press(screen.getByLabelText('Envoyer ma note'));
+    await fireEvent.press(await screen.findByLabelText('5'));
+    await fireEvent.press(screen.getByLabelText('Envoyer ma note'));
 
     expect(await screen.findByText(/note a bien été enregistrée/i)).toBeTruthy();
     // `commentaire.trim() || undefined` (useNoterSession.ts) : JSON.stringify élimine la clé
@@ -116,10 +116,10 @@ describe('NotationScreen', () => {
     const noteMoyenneFetch = createFetchMock();
     global.fetch = ((url: string, options?: RequestInit) =>
       options?.method === 'POST' ? pending : noteMoyenneFetch(url, options)) as unknown as typeof fetch;
-    render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
+    await render(<NotationScreen reservationId="reservation-1" cibleId="user-2" />);
 
-    fireEvent.press(await screen.findByLabelText('5'));
-    fireEvent.press(screen.getByLabelText('Envoyer ma note'));
+    await fireEvent.press(await screen.findByLabelText('5'));
+    await fireEvent.press(screen.getByLabelText('Envoyer ma note'));
 
     const bouton = await screen.findByLabelText('Envoyer ma note');
     expect(bouton.props.accessibilityState.disabled).toBe(true);

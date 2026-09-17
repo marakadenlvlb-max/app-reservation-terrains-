@@ -57,18 +57,18 @@ beforeEach(() => {
 describe('EditTerrainScreen', () => {
   it("charge et affiche l'annonce existante", async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     expect(await screen.findByDisplayValue('Rue 12, Dakar')).toBeTruthy();
   });
 
   it('enregistre les modifications et affiche une confirmation', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     await screen.findByDisplayValue('Rue 12, Dakar');
-    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 20, Dakar');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 20, Dakar');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/annonce mise à jour/i)).toBeTruthy();
   });
@@ -80,10 +80,10 @@ describe('EditTerrainScreen', () => {
       const destructive = buttons?.find((button) => button.style === 'destructive');
       destructive?.onPress?.();
     });
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     await screen.findByDisplayValue('Rue 12, Dakar');
-    fireEvent.press(screen.getByLabelText("Retirer l'annonce"));
+    await fireEvent.press(screen.getByLabelText("Retirer l'annonce"));
 
     expect(alertSpy).toHaveBeenCalled();
     expect(await screen.findByText(/annonce retirée/i)).toBeTruthy();
@@ -97,10 +97,10 @@ describe('EditTerrainScreen', () => {
       const destructive = buttons?.find((button) => button.style === 'destructive');
       destructive?.onPress?.();
     });
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     await screen.findByDisplayValue('Rue 12, Dakar');
-    fireEvent.press(screen.getByLabelText("Retirer l'annonce"));
+    await fireEvent.press(screen.getByLabelText("Retirer l'annonce"));
 
     expect(await screen.findByText(/créneaux encore réservés/i)).toBeTruthy();
   });
@@ -115,10 +115,10 @@ describe('EditTerrainScreen', () => {
       const cancel = buttons?.find((button) => button.style === 'cancel');
       cancel?.onPress?.();
     });
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     await screen.findByDisplayValue('Rue 12, Dakar');
-    fireEvent.press(screen.getByLabelText("Retirer l'annonce"));
+    await fireEvent.press(screen.getByLabelText("Retirer l'annonce"));
 
     expect(fetchMock).not.toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'DELETE' }));
     expect(screen.getByDisplayValue('Rue 12, Dakar')).toBeTruthy();
@@ -128,11 +128,11 @@ describe('EditTerrainScreen', () => {
   it("affiche une erreur de validation si l'adresse est vidée, sans appeler l'API", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     await screen.findByDisplayValue('Rue 12, Dakar');
-    fireEvent.changeText(screen.getByLabelText('Adresse'), '');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), '');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/adresse est requise/i)).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'PATCH' }));
@@ -141,7 +141,7 @@ describe('EditTerrainScreen', () => {
   // TC-006-08 (rapport-qa.md) : seul le succès du chargement était testé.
   it("affiche une erreur bloquante si le chargement de l'annonce échoue", async () => {
     global.fetch = createFetchMock({ loadOk: false }) as unknown as typeof fetch;
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/annonce/i)).toBeTruthy();
   });
@@ -149,11 +149,11 @@ describe('EditTerrainScreen', () => {
   // TC-006-09 (rapport-qa.md) : le mock ne supportait même pas `updateOk` côté mobile.
   it('affiche une erreur si la modification échoue, sans vider le formulaire', async () => {
     global.fetch = createFetchMock({ updateOk: false }) as unknown as typeof fetch;
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     await screen.findByDisplayValue('Rue 12, Dakar');
-    fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 20, Dakar');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.changeText(screen.getByLabelText('Adresse'), 'Rue 20, Dakar');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/modification a échoué/i)).toBeTruthy();
     expect(screen.getByDisplayValue('Rue 20, Dakar')).toBeTruthy();
@@ -163,7 +163,7 @@ describe('EditTerrainScreen', () => {
   // authentifié ne doit jamais voir "Connecte-toi..." s'afficher, même brièvement.
   it("n'affiche jamais le message de connexion pour un utilisateur déjà authentifié", async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<EditTerrainScreen terrainId="terrain-1" />);
+    await render(<EditTerrainScreen terrainId="terrain-1" />);
 
     expect(screen.queryByText(/connecte-toi/i)).toBeNull();
 

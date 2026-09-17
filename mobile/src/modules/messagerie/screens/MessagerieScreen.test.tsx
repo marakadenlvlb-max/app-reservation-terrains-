@@ -30,14 +30,14 @@ beforeEach(() => {
 describe('MessagerieScreen', () => {
   it('affiche les messages existants de la conversation', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [MESSAGE_AUTRE] })) as unknown as typeof fetch;
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     expect(await screen.findByText(/vestiaires/i)).toBeTruthy();
   });
 
   it("affiche un message clair quand la conversation n'a aucun message", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [] })) as unknown as typeof fetch;
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     expect(await screen.findByText(/aucun message/i)).toBeTruthy();
   });
@@ -59,18 +59,18 @@ describe('MessagerieScreen', () => {
       return Promise.resolve({ ok: true, json: async () => [MESSAGE_AUTRE] });
     });
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     await screen.findByText(/vestiaires/i);
-    fireEvent.changeText(screen.getByLabelText('Message'), 'Merci !');
-    fireEvent.press(screen.getByLabelText('Envoyer'));
+    await fireEvent.changeText(screen.getByLabelText('Message'), 'Merci !');
+    await fireEvent.press(screen.getByLabelText('Envoyer'));
 
     expect(await screen.findByText('Merci !')).toBeTruthy();
   });
 
   it("invite à se connecter si l'utilisateur n'a pas de session", async () => {
     mockSecureStore.clear();
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
@@ -79,7 +79,7 @@ describe('MessagerieScreen', () => {
   // notifications) manquait pour la messagerie elle-même.
   it('affiche une erreur si le chargement de la conversation échoue', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     expect(await screen.findByText(/impossible de charger la conversation/i)).toBeTruthy();
   });
@@ -92,11 +92,11 @@ describe('MessagerieScreen', () => {
       }
       return Promise.resolve({ ok: true, json: async () => [MESSAGE_AUTRE] });
     }) as unknown as typeof fetch;
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     await screen.findByText(/vestiaires/i);
-    fireEvent.changeText(screen.getByLabelText('Message'), 'Merci !');
-    fireEvent.press(screen.getByLabelText('Envoyer'));
+    await fireEvent.changeText(screen.getByLabelText('Message'), 'Merci !');
+    await fireEvent.press(screen.getByLabelText('Envoyer'));
 
     expect(await screen.findByText(/l'envoi du message a échoué/i)).toBeTruthy();
     expect(screen.queryByText('Merci !')).toBeNull();
@@ -113,12 +113,12 @@ describe('MessagerieScreen', () => {
       if (options?.method === 'POST') return pending;
       return Promise.resolve({ ok: true, json: async () => [MESSAGE_AUTRE] });
     }) as unknown as typeof fetch;
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     await screen.findByText(/vestiaires/i);
     const champ = screen.getByLabelText('Message');
-    fireEvent.changeText(champ, 'Merci !');
-    fireEvent.press(screen.getByLabelText('Envoyer'));
+    await fireEvent.changeText(champ, 'Merci !');
+    await fireEvent.press(screen.getByLabelText('Envoyer'));
 
     expect(screen.getByLabelText('Message').props.value).toBe('');
 
@@ -145,11 +145,11 @@ describe('MessagerieScreen', () => {
       if (options?.method === 'POST') return pending;
       return Promise.resolve({ ok: true, json: async () => [MESSAGE_AUTRE] });
     }) as unknown as typeof fetch;
-    render(<MessagerieScreen reservationId="reservation-1" />);
+    await render(<MessagerieScreen reservationId="reservation-1" />);
 
     await screen.findByText(/vestiaires/i);
-    fireEvent.changeText(screen.getByLabelText('Message'), 'Merci !');
-    fireEvent.press(screen.getByLabelText('Envoyer'));
+    await fireEvent.changeText(screen.getByLabelText('Message'), 'Merci !');
+    await fireEvent.press(screen.getByLabelText('Envoyer'));
 
     const bouton = await screen.findByLabelText('Envoyer');
     expect(bouton.props.accessibilityState.disabled).toBe(true);

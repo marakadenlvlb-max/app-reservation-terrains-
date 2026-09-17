@@ -31,19 +31,19 @@ jest.mock('@react-native-community/datetimepicker', () => {
 });
 
 /** Simule le choix d'une date/heure dans le sélecteur natif (mocké ci-dessus) pour le champ `label`. */
-function choisirDateHeure(label: string, isoValue: string) {
+async function choisirDateHeure(label: string, isoValue: string) {
   const [datePart, heurePart] = isoValue.split('T');
   const [annee, mois, jour] = datePart.split('-').map(Number);
   const [heure, minute] = heurePart.split(':').map(Number);
 
-  fireEvent.press(screen.getByLabelText(label));
-  fireEvent(
+  await fireEvent.press(screen.getByLabelText(label));
+  await fireEvent(
     screen.getByTestId('mock-datetimepicker'),
     'change',
     { type: 'set' },
     new Date(annee, mois - 1, jour, heure, minute)
   );
-  fireEvent.press(screen.getByLabelText('Valider la date'));
+  await fireEvent.press(screen.getByLabelText('Valider la date'));
 }
 
 const EXISTING_CRENEAU = {
@@ -115,7 +115,7 @@ beforeEach(() => {
 describe('CreneauxScreen', () => {
   it('charge et affiche les créneaux existants', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/2026-09-01T18:00/)).toBeTruthy();
   });
@@ -123,10 +123,10 @@ describe('CreneauxScreen', () => {
   it("affiche les erreurs de validation et n'appelle pas l'API de création si le formulaire est incomplet", async () => {
     const fetchMock = createFetchMock();
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
+    await fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
 
     expect(await screen.findByText(/début requises/i)).toBeTruthy();
     expect(screen.getByText(/fin requises/i)).toBeTruthy();
@@ -138,55 +138,55 @@ describe('CreneauxScreen', () => {
   // côté mobile — écart de parité relevé en session QA.
   it('rejette un créneau dont la fin précède le début', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    choisirDateHeure('Début', '2026-09-02T10:00');
-    choisirDateHeure('Fin', '2026-09-02T09:00');
-    fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
-    fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
+    await choisirDateHeure('Début', '2026-09-02T10:00');
+    await choisirDateHeure('Fin', '2026-09-02T09:00');
+    await fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
+    await fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
 
     expect(await screen.findByText(/fin doit être après le début/i)).toBeTruthy();
   });
 
   it('ajoute un créneau valide à la liste', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    choisirDateHeure('Début', '2026-09-02T10:00');
-    choisirDateHeure('Fin', '2026-09-02T11:00');
-    fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
-    fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
+    await choisirDateHeure('Début', '2026-09-02T10:00');
+    await choisirDateHeure('Fin', '2026-09-02T11:00');
+    await fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
+    await fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
 
     expect(await screen.findByText(/2026-09-02T10:00/)).toBeTruthy();
   });
 
   it('modifie un créneau existant', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.press(screen.getByLabelText(/^modifier le créneau/i));
-    fireEvent.changeText(screen.getByLabelText(/^tarif du créneau/i), '18000');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.press(screen.getByLabelText(/^modifier le créneau/i));
+    await fireEvent.changeText(screen.getByLabelText(/^tarif du créneau/i), '18000');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/18000/)).toBeTruthy();
   });
 
   it('retire un créneau existant', async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.press(screen.getByLabelText(/^retirer le créneau/i));
+    await fireEvent.press(screen.getByLabelText(/^retirer le créneau/i));
 
     expect(await screen.findByText(/aucun créneau défini/i)).toBeTruthy();
   });
 
   it('désactive la modification et le retrait pour un créneau déjà réservé', async () => {
     global.fetch = createFetchMock({ list: [RESERVED_CRENEAU] }) as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-03T18:00/);
     // Pressable ne propage pas `disabled` tel quel sur le nœud hôte rendu : il le fond dans
@@ -199,7 +199,7 @@ describe('CreneauxScreen', () => {
   // TC-005-09 (rapport-qa.md) : aucun test ne simulait un échec du chargement initial.
   it('affiche une erreur bloquante si le chargement des créneaux échoue', async () => {
     global.fetch = createFetchMock({ listOk: false }) as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/créneaux/i)).toBeTruthy();
   });
@@ -208,13 +208,13 @@ describe('CreneauxScreen', () => {
   // l'invoquait.
   it("affiche une erreur si l'ajout d'un créneau échoue, sans vider le formulaire", async () => {
     global.fetch = createFetchMock({ createOk: false }) as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    choisirDateHeure('Début', '2026-09-02T10:00');
-    choisirDateHeure('Fin', '2026-09-02T11:00');
-    fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
-    fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
+    await choisirDateHeure('Début', '2026-09-02T10:00');
+    await choisirDateHeure('Fin', '2026-09-02T11:00');
+    await fireEvent.changeText(screen.getByLabelText('Tarif'), '15000');
+    await fireEvent.press(screen.getByLabelText('Ajouter le créneau'));
 
     expect(await screen.findByText(/l'ajout du créneau a échoué/i)).toBeTruthy();
     // Le champ garde la date choisie plutôt que d'être vidé après un échec — même intention que
@@ -226,12 +226,12 @@ describe('CreneauxScreen', () => {
   // édition qu'en cas de succès réel") mais jamais vérifié par un test.
   it('affiche une erreur de modification et laisse le mode édition ouvert', async () => {
     global.fetch = createFetchMock({ updateOk: false }) as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.press(screen.getByLabelText(/^modifier le créneau/i));
-    fireEvent.changeText(screen.getByLabelText(/^tarif du créneau/i), '18000');
-    fireEvent.press(screen.getByLabelText('Enregistrer'));
+    await fireEvent.press(screen.getByLabelText(/^modifier le créneau/i));
+    await fireEvent.changeText(screen.getByLabelText(/^tarif du créneau/i), '18000');
+    await fireEvent.press(screen.getByLabelText('Enregistrer'));
 
     expect(await screen.findByText(/modification a échoué/i)).toBeTruthy();
     expect(screen.getByLabelText('Enregistrer')).toBeTruthy();
@@ -240,10 +240,10 @@ describe('CreneauxScreen', () => {
   // TC-005-12 (rapport-qa.md) : aucun test ne simulait un échec du retrait.
   it('affiche une erreur de retrait et garde le créneau dans la liste', async () => {
     global.fetch = createFetchMock({ removeOk: false }) as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     await screen.findByText(/2026-09-01T18:00/);
-    fireEvent.press(screen.getByLabelText(/^retirer le créneau/i));
+    await fireEvent.press(screen.getByLabelText(/^retirer le créneau/i));
 
     expect(await screen.findByText(/retrait a échoué/i)).toBeTruthy();
     expect(screen.getByText(/2026-09-01T18:00/)).toBeTruthy();
@@ -253,7 +253,7 @@ describe('CreneauxScreen', () => {
   // authentifié ne doit jamais voir "Connecte-toi..." s'afficher, même brièvement.
   it("n'affiche jamais le message de connexion pour un utilisateur déjà authentifié", async () => {
     global.fetch = createFetchMock() as unknown as typeof fetch;
-    render(<CreneauxScreen terrainId="terrain-1" />);
+    await render(<CreneauxScreen terrainId="terrain-1" />);
 
     expect(screen.queryByText(/connecte-toi/i)).toBeNull();
 

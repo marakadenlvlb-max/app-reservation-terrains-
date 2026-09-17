@@ -7,20 +7,20 @@ beforeEach(() => {
 });
 
 describe('AccueilScreen', () => {
-  it('donne accès aux deux univers (joueur et propriétaire/gestionnaire) sans distinction de rôle', () => {
-    render(<AccueilScreen />);
+  it('donne accès aux deux univers (joueur et propriétaire/gestionnaire) sans distinction de rôle', async () => {
+    await render(<AccueilScreen />);
 
-    fireEvent.press(screen.getByText(/trouver un terrain/i));
+    await fireEvent.press(screen.getByText(/trouver un terrain/i));
     expect(pushMock).toHaveBeenCalledWith('/recherche');
 
-    fireEvent.press(screen.getByText(/gérer mes annonces/i));
+    await fireEvent.press(screen.getByText(/gérer mes annonces/i));
     expect(pushMock).toHaveBeenCalledWith('/mes-annonces');
   });
 
-  it('propose un lien vers mes reversements', () => {
-    render(<AccueilScreen />);
+  it('propose un lien vers mes reversements', async () => {
+    await render(<AccueilScreen />);
 
-    fireEvent.press(screen.getByText(/mes reversements/i));
+    await fireEvent.press(screen.getByText(/mes reversements/i));
 
     expect(pushMock).toHaveBeenCalledWith('/reversements');
   });

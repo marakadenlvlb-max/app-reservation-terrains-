@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { useRouter } from 'expo-router';
-import { DrawerContentScrollView, DrawerItemList, type DrawerContentComponentProps } from '@react-navigation/drawer';
+import {
+  DrawerContentScrollView,
+  DrawerItemList,
+  type DrawerContentComponentProps,
+} from 'expo-router/drawer';
 import { useSessionToken } from '@app/auth-core';
 import { mobileSessionStorage } from '../../src/modules/authentification/sessionStorage';
 import { LogoutButton } from '../../src/modules/authentification/components/LogoutButton';

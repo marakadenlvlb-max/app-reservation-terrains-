@@ -22,7 +22,7 @@ beforeEach(() => {
 
 describe('MesAnnoncesScreen', () => {
   it("invite à se connecter si aucune session n'est active", async () => {
-    render(<MesAnnoncesScreen />);
+    await render(<MesAnnoncesScreen />);
 
     expect(await screen.findByText(/connecte-toi/i)).toBeTruthy();
   });
@@ -50,14 +50,14 @@ describe('MesAnnoncesScreen', () => {
       })
     ) as unknown as typeof fetch;
 
-    render(<MesAnnoncesScreen />);
+    await render(<MesAnnoncesScreen />);
 
     expect(await screen.findByText(/12 rue du stade/i)).toBeTruthy();
 
-    fireEvent.press(screen.getByText(/modifier/i));
+    await fireEvent.press(screen.getByText(/modifier/i));
     expect(pushMock).toHaveBeenCalledWith('/terrains/terrain-1/modifier');
 
-    fireEvent.press(screen.getByText(/gérer les créneaux/i));
+    await fireEvent.press(screen.getByText(/gérer les créneaux/i));
     expect(pushMock).toHaveBeenCalledWith('/terrains/terrain-1/creneaux');
   });
 
@@ -65,7 +65,7 @@ describe('MesAnnoncesScreen', () => {
     mockSecureStore.set('auth_token', 'token-123');
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => [] })) as unknown as typeof fetch;
 
-    render(<MesAnnoncesScreen />);
+    await render(<MesAnnoncesScreen />);
 
     expect(await screen.findByText(/aucune annonce/i)).toBeTruthy();
   });

@@ -14,9 +14,9 @@ beforeEach(() => {
 
 describe('RegisterScreen', () => {
   it("affiche les erreurs de validation et n'appelle pas l'API si le formulaire est invalide", async () => {
-    render(<RegisterScreen />);
+    await render(<RegisterScreen />);
 
-    fireEvent.press(screen.getByLabelText('Créer mon compte'));
+    await fireEvent.press(screen.getByLabelText('Créer mon compte'));
 
     expect(await screen.findByText(/email ou téléphone requis/i)).toBeTruthy();
     expect(screen.getByText(/au moins 8 caractères/i)).toBeTruthy();
@@ -29,12 +29,12 @@ describe('RegisterScreen', () => {
       ok: true,
       json: async () => ({ utilisateurId: 'user-1', identifiant: 'joueur@example.com' }),
     });
-    render(<RegisterScreen />);
+    await render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
-    fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
-    fireEvent.press(screen.getByLabelText('Foot'));
-    fireEvent.press(screen.getByLabelText('Créer mon compte'));
+    await fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
+    await fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
+    await fireEvent.press(screen.getByLabelText('Foot'));
+    await fireEvent.press(screen.getByLabelText('Créer mon compte'));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
@@ -50,12 +50,12 @@ describe('RegisterScreen', () => {
       ok: false,
       json: async () => ({ message: 'Cet email est déjà utilisé.' }),
     });
-    render(<RegisterScreen />);
+    await render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
-    fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
-    fireEvent.press(screen.getByLabelText('Tennis'));
-    fireEvent.press(screen.getByLabelText('Créer mon compte'));
+    await fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
+    await fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
+    await fireEvent.press(screen.getByLabelText('Tennis'));
+    await fireEvent.press(screen.getByLabelText('Créer mon compte'));
 
     expect(await screen.findByText(/déjà utilisé/i)).toBeTruthy();
     expect(pushMock).not.toHaveBeenCalled();
@@ -68,12 +68,12 @@ describe('RegisterScreen', () => {
       ok: true,
       json: async () => ({ utilisateurId: 'user-1', identifiant: '+221771234567' }),
     });
-    render(<RegisterScreen />);
+    await render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), '+221771234567');
-    fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
-    fireEvent.press(screen.getByLabelText('Foot'));
-    fireEvent.press(screen.getByLabelText('Créer mon compte'));
+    await fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), '+221771234567');
+    await fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
+    await fireEvent.press(screen.getByLabelText('Foot'));
+    await fireEvent.press(screen.getByLabelText('Créer mon compte'));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(screen.queryByText(/format invalide/i)).toBeNull();
@@ -96,12 +96,12 @@ describe('RegisterScreen', () => {
       erreurAttendue: /au moins 8 caractères/i,
     },
   ])('affiche une erreur de validation : $cas', async ({ identifiant, motDePasse, erreurAttendue }) => {
-    render(<RegisterScreen />);
+    await render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), identifiant);
-    fireEvent.changeText(screen.getByLabelText('Mot de passe'), motDePasse);
-    fireEvent.press(screen.getByLabelText('Foot'));
-    fireEvent.press(screen.getByLabelText('Créer mon compte'));
+    await fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), identifiant);
+    await fireEvent.changeText(screen.getByLabelText('Mot de passe'), motDePasse);
+    await fireEvent.press(screen.getByLabelText('Foot'));
+    await fireEvent.press(screen.getByLabelText('Créer mon compte'));
 
     expect(await screen.findByText(erreurAttendue)).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -109,17 +109,17 @@ describe('RegisterScreen', () => {
 
   // TC-001-07 (rapport-qa.md) : le champ était déjà `secureTextEntry` dans le code, mais rien ne
   // l'affirmait par un test — pertinent car directement lié à RNF-002.
-  it('masque la saisie du mot de passe (RNF-002)', () => {
-    render(<RegisterScreen />);
+  it('masque la saisie du mot de passe (RNF-002)', async () => {
+    await render(<RegisterScreen />);
 
     expect(screen.getByLabelText('Mot de passe').props.secureTextEntry).toBe(true);
   });
 
   // US-29 : /connexion n'était atteignable depuis ici que via App.tsx codé en dur.
-  it('propose un lien vers /connexion', () => {
-    render(<RegisterScreen />);
+  it('propose un lien vers /connexion', async () => {
+    await render(<RegisterScreen />);
 
-    fireEvent.press(screen.getByText(/se connecter/i));
+    await fireEvent.press(screen.getByText(/se connecter/i));
 
     expect(pushMock).toHaveBeenCalledWith('/connexion');
   });

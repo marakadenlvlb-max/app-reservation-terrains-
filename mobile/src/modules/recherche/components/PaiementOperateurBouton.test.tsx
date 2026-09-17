@@ -28,9 +28,9 @@ describe('PaiementOperateurBouton', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
+    await render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
 
-    fireEvent.press(screen.getByLabelText('Payer avec Wave'));
+    await fireEvent.press(screen.getByLabelText('Payer avec Wave'));
 
     await screen.findByLabelText('Payer avec Wave');
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith('https://checkout.wave.com/xyz');
@@ -38,9 +38,9 @@ describe('PaiementOperateurBouton', () => {
 
   it("affiche une erreur si l'initialisation du paiement échoue, sans ouvrir le navigateur", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
+    await render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
 
-    fireEvent.press(screen.getByLabelText('Payer avec Wave'));
+    await fireEvent.press(screen.getByLabelText('Payer avec Wave'));
 
     expect(await screen.findByText(/initialisation du paiement a échoué/i)).toBeTruthy();
     expect(WebBrowser.openBrowserAsync).not.toHaveBeenCalled();
@@ -61,9 +61,9 @@ describe('PaiementOperateurBouton', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
+    await render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
 
-    fireEvent.press(screen.getByLabelText('Payer avec Wave'));
+    await fireEvent.press(screen.getByLabelText('Payer avec Wave'));
 
     expect(await screen.findByText(/n'a pas pu s'ouvrir/i)).toBeTruthy();
   });
@@ -75,9 +75,9 @@ describe('PaiementOperateurBouton', () => {
       resolveFetch = resolve;
     });
     global.fetch = jest.fn(() => pending) as unknown as typeof fetch;
-    render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
+    await render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
 
-    fireEvent.press(screen.getByLabelText('Payer avec Wave'));
+    await fireEvent.press(screen.getByLabelText('Payer avec Wave'));
 
     const bouton = await screen.findByLabelText('Payer avec Wave');
     expect(bouton.props.accessibilityState.disabled).toBe(true);
@@ -104,9 +104,9 @@ describe('PaiementOperateurBouton', () => {
       })
     );
     global.fetch = fetchMock as unknown as typeof fetch;
-    render(<PaiementOperateurBouton reservationId="reservation-1" operateur={operateur} token="token-123" />);
+    await render(<PaiementOperateurBouton reservationId="reservation-1" operateur={operateur} token="token-123" />);
 
-    fireEvent.press(screen.getByLabelText(`Payer avec ${OPERATEUR_LABELS[operateur]}`));
+    await fireEvent.press(screen.getByLabelText(`Payer avec ${OPERATEUR_LABELS[operateur]}`));
 
     await screen.findByLabelText(`Payer avec ${OPERATEUR_LABELS[operateur]}`);
     expect(fetchMock).toHaveBeenCalledWith(
@@ -130,9 +130,9 @@ describe('PaiementOperateurBouton', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
+    await render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
 
-    fireEvent.press(screen.getByLabelText('Payer avec Wave'));
+    await fireEvent.press(screen.getByLabelText('Payer avec Wave'));
 
     expect(await screen.findByText(/réduction de parrainage de 10%/i)).toBeTruthy();
     expect(screen.getByText(/9000 fcfa/i)).toBeTruthy();
@@ -150,9 +150,9 @@ describe('PaiementOperateurBouton', () => {
         }),
       })
     ) as unknown as typeof fetch;
-    render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
+    await render(<PaiementOperateurBouton reservationId="reservation-1" operateur="wave" token="token-123" />);
 
-    fireEvent.press(screen.getByLabelText('Payer avec Wave'));
+    await fireEvent.press(screen.getByLabelText('Payer avec Wave'));
 
     await screen.findByLabelText('Payer avec Wave');
     expect(screen.queryByText(/réduction de parrainage/i)).toBeNull();

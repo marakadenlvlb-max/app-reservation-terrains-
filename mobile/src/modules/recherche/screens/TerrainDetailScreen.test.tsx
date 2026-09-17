@@ -15,7 +15,7 @@ const DETAIL = {
 describe('TerrainDetailScreen', () => {
   it("affiche les informations de l'annonce (équipements, note, créneaux)", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: async () => DETAIL })) as unknown as typeof fetch;
-    render(<TerrainDetailScreen terrainId="terrain-1" />);
+    await render(<TerrainDetailScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/rue 12, dakar/i)).toBeTruthy();
     expect(screen.getByText(/4.5 \/ 5/)).toBeTruthy();
@@ -25,7 +25,7 @@ describe('TerrainDetailScreen', () => {
 
   it("affiche une erreur si l'annonce n'existe plus", async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => null })) as unknown as typeof fetch;
-    render(<TerrainDetailScreen terrainId="terrain-inconnu" />);
+    await render(<TerrainDetailScreen terrainId="terrain-inconnu" />);
 
     expect(await screen.findByText(/impossible de charger/i)).toBeTruthy();
   });
@@ -35,7 +35,7 @@ describe('TerrainDetailScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => ({ ...DETAIL, proprietaireNoteMoyenne: null }) })
     ) as unknown as typeof fetch;
-    render(<TerrainDetailScreen terrainId="terrain-1" />);
+    await render(<TerrainDetailScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/pas encore de note/i)).toBeTruthy();
   });
@@ -45,7 +45,7 @@ describe('TerrainDetailScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => ({ ...DETAIL, creneauxDisponibles: [] }) })
     ) as unknown as typeof fetch;
-    render(<TerrainDetailScreen terrainId="terrain-1" />);
+    await render(<TerrainDetailScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/aucun créneau disponible pour l'instant/i)).toBeTruthy();
   });
@@ -57,7 +57,7 @@ describe('TerrainDetailScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => ({ ...DETAIL, photos: [] }) })
     ) as unknown as typeof fetch;
-    render(<TerrainDetailScreen terrainId="terrain-1" />);
+    await render(<TerrainDetailScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/rue 12, dakar/i)).toBeTruthy();
     expect(screen.getByText(/4.5 \/ 5/)).toBeTruthy();
@@ -68,7 +68,7 @@ describe('TerrainDetailScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => ({ ...DETAIL, equipements: [] }) })
     ) as unknown as typeof fetch;
-    render(<TerrainDetailScreen terrainId="terrain-1" />);
+    await render(<TerrainDetailScreen terrainId="terrain-1" />);
 
     await screen.findByText(/rue 12, dakar/i);
     expect(screen.queryByText('Équipements')).toBeNull();
@@ -79,7 +79,7 @@ describe('TerrainDetailScreen', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: async () => ({ ...DETAIL, type: null }) })
     ) as unknown as typeof fetch;
-    render(<TerrainDetailScreen terrainId="terrain-1" />);
+    await render(<TerrainDetailScreen terrainId="terrain-1" />);
 
     expect(await screen.findByText(/rue 12, dakar/i)).toBeTruthy();
     expect(screen.queryByText(/synthétique extérieur/i)).toBeNull();

@@ -29,9 +29,9 @@ beforeEach(() => {
 
 describe('LoginScreen', () => {
   it("affiche les erreurs de validation et n'appelle pas l'API si le formulaire est vide", async () => {
-    render(<LoginScreen />);
+    await render(<LoginScreen />);
 
-    fireEvent.press(screen.getByLabelText('Se connecter'));
+    await fireEvent.press(screen.getByLabelText('Se connecter'));
 
     expect(await screen.findByText(/email ou téléphone requis/i)).toBeTruthy();
     expect(screen.getByText(/mot de passe requis/i)).toBeTruthy();
@@ -43,11 +43,11 @@ describe('LoginScreen', () => {
       ok: true,
       json: async () => ({ utilisateurId: 'user-1', identifiant: 'joueur@example.com', token: 'abc123' }),
     });
-    render(<LoginScreen />);
+    await render(<LoginScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
-    fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
-    fireEvent.press(screen.getByLabelText('Se connecter'));
+    await fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
+    await fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'motdepasse123');
+    await fireEvent.press(screen.getByLabelText('Se connecter'));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(mockSecureStore.get('auth_token')).toBe('abc123'));
@@ -57,11 +57,11 @@ describe('LoginScreen', () => {
 
   it('affiche un message générique si les identifiants sont incorrects', async () => {
     fetchMock.mockResolvedValueOnce({ ok: false, json: async () => null });
-    render(<LoginScreen />);
+    await render(<LoginScreen />);
 
-    fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
-    fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'mauvais-mot-de-passe');
-    fireEvent.press(screen.getByLabelText('Se connecter'));
+    await fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), 'joueur@example.com');
+    await fireEvent.changeText(screen.getByLabelText('Mot de passe'), 'mauvais-mot-de-passe');
+    await fireEvent.press(screen.getByLabelText('Se connecter'));
 
     expect(await screen.findByText(/identifiant ou mot de passe incorrect/i)).toBeTruthy();
     expect(mockSecureStore.get('auth_token')).toBeUndefined();
@@ -89,11 +89,11 @@ describe('LoginScreen', () => {
   ])(
     "n'affiche que l'erreur du champ manquant : $cas",
     async ({ identifiant, motDePasse, erreurAttendue, erreurAbsente }) => {
-      render(<LoginScreen />);
+      await render(<LoginScreen />);
 
-      if (identifiant) fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), identifiant);
-      if (motDePasse) fireEvent.changeText(screen.getByLabelText('Mot de passe'), motDePasse);
-      fireEvent.press(screen.getByLabelText('Se connecter'));
+      if (identifiant) await fireEvent.changeText(screen.getByLabelText('Email ou téléphone'), identifiant);
+      if (motDePasse) await fireEvent.changeText(screen.getByLabelText('Mot de passe'), motDePasse);
+      await fireEvent.press(screen.getByLabelText('Se connecter'));
 
       expect(await screen.findByText(erreurAttendue)).toBeTruthy();
       expect(screen.queryByText(erreurAbsente)).toBeNull();
@@ -102,10 +102,10 @@ describe('LoginScreen', () => {
   );
 
   // US-29 : /inscription n'était atteignable depuis ici que via App.tsx codé en dur.
-  it('propose un lien vers /inscription', () => {
-    render(<LoginScreen />);
+  it('propose un lien vers /inscription', async () => {
+    await render(<LoginScreen />);
 
-    fireEvent.press(screen.getByText(/créer un compte/i));
+    await fireEvent.press(screen.getByText(/créer un compte/i));
 
     expect(pushMock).toHaveBeenCalledWith('/inscription');
   });
