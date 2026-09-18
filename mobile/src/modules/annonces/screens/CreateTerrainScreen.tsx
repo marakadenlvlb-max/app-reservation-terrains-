@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useSessionToken } from '@app/auth-core';
 import { EQUIPEMENT_OPTIONS, useCreateTerrainForm, useTerrainPhotoUpload, type Terrain } from '@app/annonces-core';
@@ -22,6 +23,7 @@ export function CreateTerrainScreen() {
   // soumission est désactivé le temps de savoir si `token` est réellement `null` ou une vraie
   // session — voir plus bas.
   const token = useSessionToken(mobileSessionStorage);
+  const insets = useSafeAreaInsets();
   const [terrain, setTerrain] = useState<Terrain | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
@@ -80,7 +82,12 @@ export function CreateTerrainScreen() {
 
   if (terrain) {
     return (
-      <View className="flex-1 justify-center gap-4 px-6">
+      // Écran hors du groupe (drawer), donc sans en-tête : voir le commentaire équivalent dans
+      // LoginScreen.tsx (régression edge-to-edge Android, SDK 57).
+      <View
+        className="flex-1 justify-center gap-4 px-6"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      >
         <Text className="text-sm text-green-600">
           Annonce publiée. Ajoute des photos pour la rendre plus attractive.
         </Text>
@@ -109,7 +116,12 @@ export function CreateTerrainScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center gap-4 px-6">
+    // Écran hors du groupe (drawer), donc sans en-tête : voir le commentaire équivalent dans
+    // LoginScreen.tsx (régression edge-to-edge Android, SDK 57).
+    <View
+      className="flex-1 justify-center gap-4 px-6"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
       <Text className="text-xl font-semibold">Publier une annonce</Text>
 
       <View className="gap-1">

@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { useLoginForm } from '@app/auth-core';
 import { mobileSessionStorage } from '../sessionStorage';
@@ -10,6 +11,7 @@ import { mobileSessionStorage } from '../sessionStorage';
  */
 export function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const { identifiant, motDePasse, errors, submitting, submitError, setIdentifiant, setMotDePasse, submit } =
     useLoginForm({
@@ -24,7 +26,11 @@ export function LoginScreen() {
     });
 
   return (
-    <View className="flex-1 justify-center gap-4 px-6">
+    // Écran hors du groupe (drawer) donc sans en-tête (voir app/_layout.tsx) : sur Android, depuis
+    // SDK 54, le contenu est dessiné sous la barre de statut par défaut (edge-to-edge) — sans ce
+    // padding explicite, "Se connecter" et le champ "Email ou téléphone" se retrouvent sous elle
+    // (ni visibles ni cliquables), alors que "Mot de passe", plus bas, y échappe.
+    <View className="flex-1 justify-center gap-4 px-6" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <Text className="text-xl font-semibold">Se connecter</Text>
 
       <View className="gap-1">

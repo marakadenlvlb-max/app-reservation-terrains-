@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 
 /**
@@ -9,8 +10,13 @@ import { Link } from 'expo-router';
  * décision qu'AccueilView côté web).
  */
 export function AccueilScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View className="flex-1 justify-center gap-6 px-6">
+    // Écran dans le groupe (drawer), avec en-tête (voir app/(drawer)/_layout.tsx) : React
+    // Navigation gère déjà l'inset du HAUT via l'en-tête, seul le bas (barre de gestes Android,
+    // edge-to-edge depuis SDK 54) reste à compenser ici.
+    <View className="flex-1 justify-center gap-6 px-6" style={{ paddingBottom: insets.bottom }}>
       <Text className="text-xl font-semibold">Bienvenue</Text>
       <View className="gap-3">
         <Link href="/recherche" className="rounded border border-gray-300 px-4 py-3 font-medium">

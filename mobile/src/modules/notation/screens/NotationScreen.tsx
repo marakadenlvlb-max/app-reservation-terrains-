@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NOTE_MAX, NOTE_MIN, useNoterSession } from '@app/notation-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
 import { NoteMoyenneBadge } from '../components/NoteMoyenneBadge';
@@ -13,6 +14,7 @@ const NOTES = Array.from({ length: NOTE_MAX - NOTE_MIN + 1 }, (_, i) => NOTE_MIN
  * ReserverCreneauBouton avant US-08 (pas encore d'écran "historique" pour y naviguer).
  */
 export function NotationScreen({ reservationId, cibleId }: { reservationId: string; cibleId: string }) {
+  const insets = useSafeAreaInsets();
   const [token, setToken] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -43,7 +45,12 @@ export function NotationScreen({ reservationId, cibleId }: { reservationId: stri
   }
 
   return (
-    <View className="flex-1 justify-center gap-4 px-6">
+    // Écran hors du groupe (drawer), donc sans en-tête : voir le commentaire équivalent dans
+    // LoginScreen.tsx (régression edge-to-edge Android, SDK 57).
+    <View
+      className="flex-1 justify-center gap-4 px-6"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
       <View>
         <Text className="text-xl font-semibold">Noter cette session</Text>
         <View className="flex-row gap-1">

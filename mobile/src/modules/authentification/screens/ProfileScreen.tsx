@@ -1,4 +1,5 @@
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { SPORT_OPTIONS, useProfileForm, usePhotoUpload, useSessionToken } from '@app/auth-core';
 import { mobileSessionStorage } from '../sessionStorage';
@@ -11,6 +12,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
  * (expo-image-picker plutôt qu'un input file) et le stockage de session diffèrent.
  */
 export function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const token = useSessionToken(mobileSessionStorage);
 
   const {
@@ -78,7 +80,9 @@ export function ProfileScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center gap-4 px-6">
+    // Écran dans le groupe (drawer), avec en-tête : voir le commentaire équivalent dans
+    // AccueilScreen.tsx (seul le bas reste à compenser, le haut est géré par l'en-tête).
+    <View className="flex-1 justify-center gap-4 px-6" style={{ paddingBottom: insets.bottom }}>
       <Text className="text-xl font-semibold">Mon profil</Text>
 
       <View className="items-start gap-2">

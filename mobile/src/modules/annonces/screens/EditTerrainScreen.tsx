@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSessionToken } from '@app/auth-core';
 import { EQUIPEMENT_OPTIONS, useEditTerrainForm } from '@app/annonces-core';
 import { SPORT_OPTIONS } from '@app/shared';
@@ -16,6 +17,7 @@ export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
   // BUG-002 — désormais éliminée à la racine via useSessionToken (packages/auth-core), qui
   // distingue "pas encore lu" (undefined) de "confirmé non connecté" (null) une fois pour toutes.
   const token = useSessionToken(mobileSessionStorage);
+  const insets = useSafeAreaInsets();
   const [deleted, setDeleted] = useState(false);
 
   const {
@@ -87,7 +89,12 @@ export function EditTerrainScreen({ terrainId }: { terrainId: string }) {
   }
 
   return (
-    <View className="flex-1 justify-center gap-4 px-6">
+    // Écran hors du groupe (drawer), donc sans en-tête : voir le commentaire équivalent dans
+    // LoginScreen.tsx (régression edge-to-edge Android, SDK 57).
+    <View
+      className="flex-1 justify-center gap-4 px-6"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
       <Text className="text-xl font-semibold">Modifier l'annonce</Text>
 
       <View className="gap-1">

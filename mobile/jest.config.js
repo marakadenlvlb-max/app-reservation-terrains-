@@ -1,5 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
+  setupFiles: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     // `packages/*-core` sont résolus en tant que fichiers source bruts (voir alias ci-dessous), pas
     // en tant que module npm : leurs propres `import 'react'` internes se résolvent donc depuis

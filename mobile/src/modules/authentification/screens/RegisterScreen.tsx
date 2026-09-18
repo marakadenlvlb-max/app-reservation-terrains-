@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { SPORT_OPTIONS, useRegisterForm } from '@app/auth-core';
 
@@ -9,6 +10,7 @@ import { SPORT_OPTIONS, useRegisterForm } from '@app/auth-core';
  */
 export function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const {
     identifiant,
@@ -32,7 +34,12 @@ export function RegisterScreen() {
   });
 
   return (
-    <View className="flex-1 justify-center gap-4 px-6">
+    // Écran hors du groupe (drawer), donc sans en-tête : voir le commentaire équivalent dans
+    // LoginScreen.tsx (régression edge-to-edge Android, SDK 57).
+    <View
+      className="flex-1 justify-center gap-4 px-6"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
       <Text className="text-xl font-semibold">Créer un compte</Text>
 
       <View className="gap-1">
