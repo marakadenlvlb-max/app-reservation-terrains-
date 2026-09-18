@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMessages, type Message } from '@app/messagerie-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
 
@@ -11,6 +12,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
  * place, comme les autres écrans qui en dépendent (voir NotationScreen).
  */
 export function MessagerieScreen({ reservationId }: { reservationId: string }) {
+  const insets = useSafeAreaInsets();
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [texte, setTexte] = useState('');
 
@@ -50,7 +52,10 @@ export function MessagerieScreen({ reservationId }: { reservationId: string }) {
   };
 
   return (
-    <View className="flex-1 px-6 pt-16">
+    // Écran hors du groupe (drawer), donc sans en-tête (voir HistoriqueScreen.tsx) — le bas compte
+    // particulièrement ici : la barre de saisie est en position naturelle tout en bas de l'écran,
+    // pas dans un ScrollView, donc directement exposée à la barre de gestes Android edge-to-edge.
+    <View className="flex-1 px-6" style={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom }}>
       <Text className="mb-4 text-xl font-semibold">Messages</Text>
 
       {messages.length === 0 ? (

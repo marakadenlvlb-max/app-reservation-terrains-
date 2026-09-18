@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import {
   estReservationAnnulable,
@@ -44,6 +45,7 @@ const AUTRE_VUE: Record<HistoriqueRole, { href: string; label: string }> = {
  * hook partagé (useHistorique).
  */
 export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
+  const insets = useSafeAreaInsets();
   const [token, setToken] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -99,7 +101,10 @@ export function HistoriqueScreen({ role }: { role: HistoriqueRole }) {
   }
 
   return (
-    <View className="flex-1 px-6 pt-16">
+    // Écran hors du groupe (drawer), donc sans en-tête : `pt-16` compensait déjà (avant SDK 57)
+    // l'absence d'en-tête par une marge fixe, insuffisante depuis le passage en edge-to-edge sur
+    // Android (SDK 54+) — combinée ici à l'inset dynamique réel de la barre de statut.
+    <View className="flex-1 px-6" style={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom }}>
       <View className="mb-4 flex-row items-center justify-between">
         <Text className="text-xl font-semibold">{TITRES[role]}</Text>
         <Link href={AUTRE_VUE[role].href} className="text-xs text-blue-600">

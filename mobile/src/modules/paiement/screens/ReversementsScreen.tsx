@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OPERATEUR_LABELS, useReversements, type Reversement } from '@app/paiement-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
 
@@ -15,6 +16,7 @@ const STATUT_LABELS: Record<string, string> = {
  * ReversementsList (web), même hook partagé (useReversements). Lecture seule, comme côté web.
  */
 export function ReversementsScreen() {
+  const insets = useSafeAreaInsets();
   // `undefined` = pas encore lu depuis le stockage local ; `null` = lu, mais pas connecté — voir
   // le même commentaire dans ReversementsList.tsx (web) pour le piège que ça évite.
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -52,7 +54,8 @@ export function ReversementsScreen() {
   }
 
   return (
-    <View className="flex-1 px-6 pt-16">
+    // Écran hors du groupe (drawer), donc sans en-tête (voir HistoriqueScreen.tsx).
+    <View className="flex-1 px-6" style={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom }}>
       <Text className="mb-4 text-xl font-semibold">Mes reversements</Text>
       <FlatList
         data={reversements}

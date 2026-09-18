@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useParrainage, type Filleul } from '@app/parrainage-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
 
@@ -19,6 +20,7 @@ const STATUT_LABELS: Record<string, string> = {
  * (useParrainage).
  */
 export function ParrainageScreen() {
+  const insets = useSafeAreaInsets();
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [code, setCode] = useState('');
 
@@ -55,7 +57,8 @@ export function ParrainageScreen() {
   }
 
   return (
-    <View className="flex-1 px-6 pt-16">
+    // Écran hors du groupe (drawer), donc sans en-tête (voir HistoriqueScreen.tsx).
+    <View className="flex-1 px-6" style={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom }}>
       <Text className="mb-1 text-xl font-semibold">Parrainage</Text>
       {resume && (
         <Text className="mb-4 text-sm text-gray-700">

@@ -1,4 +1,5 @@
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTerrainDetail } from '@app/recherche-core';
 import { EQUIPEMENT_OPTIONS } from '@app/shared';
 import { ReserverCreneauBouton } from '../components/ReserverCreneauBouton';
@@ -13,6 +14,7 @@ const EQUIPEMENT_LABELS = Object.fromEntries(EQUIPEMENT_OPTIONS.map((option) => 
  * écrans du module Annonces (voir leurs mêmes TODOs "routing").
  */
 export function TerrainDetailScreen({ terrainId }: { terrainId: string }) {
+  const insets = useSafeAreaInsets();
   const { detail, loading, error } = useTerrainDetail({ terrainId, apiBaseUrl: API_BASE_URL });
 
   if (loading) {
@@ -34,7 +36,15 @@ export function TerrainDetailScreen({ terrainId }: { terrainId: string }) {
   }
 
   return (
-    <ScrollView className="flex-1 px-6 pt-16" contentContainerClassName="gap-4 pb-12">
+    // Écran hors du groupe (drawer), donc sans en-tête (voir HistoriqueScreen.tsx). Le bas
+    // (`pb-12`, déjà présent) va sur le conteneur de contenu, pas le ScrollView lui-même, pour que
+    // l'inset s'ajoute à l'espace défilable plutôt que de simplement réduire le viewport visible.
+    <ScrollView
+      className="flex-1 px-6"
+      style={{ paddingTop: insets.top + 56 }}
+      contentContainerClassName="gap-4"
+      contentContainerStyle={{ paddingBottom: insets.bottom + 42 }}
+    >
       {detail.photos.length > 0 && (
         <ScrollView horizontal className="flex-row gap-2">
           {detail.photos.map((url) => (

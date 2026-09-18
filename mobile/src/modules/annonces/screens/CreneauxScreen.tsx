@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSessionToken } from '@app/auth-core';
 import { useCreneaux, type Creneau } from '@app/annonces-core';
 import { mobileSessionStorage } from '../../authentification/sessionStorage';
@@ -30,6 +31,7 @@ export function CreneauxScreen({ terrainId }: { terrainId: string }) {
   // défaut qui confondait "pas encore lu" et "confirmé non connecté" (troisième occurrence de ce
   // motif dans le projet avant l'extraction de ce hook partagé).
   const token = useSessionToken(mobileSessionStorage);
+  const insets = useSafeAreaInsets();
 
   const {
     creneaux,
@@ -72,7 +74,12 @@ export function CreneauxScreen({ terrainId }: { terrainId: string }) {
   }
 
   return (
-    <View className="flex-1 gap-6 px-6 pt-16">
+    // Écran hors du groupe (drawer), donc sans en-tête (voir HistoriqueScreen.tsx) — le bas compte
+    // ici aussi : le formulaire "Ajouter un créneau" se termine en position naturelle tout en bas.
+    <View
+      className="flex-1 gap-6 px-6"
+      style={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom }}
+    >
       <View>
         <Text className="text-xl font-semibold">Créneaux du terrain</Text>
         {creneaux.length === 0 ? (
