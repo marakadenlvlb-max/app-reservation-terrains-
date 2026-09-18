@@ -50,6 +50,12 @@ export function DateTimePickerField({ label, value, onChange, error }: DateTimeP
   const [androidStep, setAndroidStep] = useState<'date' | 'time'>('date');
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
 
+  // `value` vide (jamais sélectionné) : `parseDatetimeLocal` retombe sur `new Date()` (l'heure
+  // actuelle) — utile comme point de départ du sélecteur à l'ouverture, mais BUG (rapporté en test
+  // manuel iOS) si affiché tel quel dans le champ avant toute sélection : "maintenant" ressemble à
+  // une vraie valeur déjà choisie, alors que `debut`/`fin` restent `''` — la validation rejette
+  // alors à tort un champ qui semblait pourtant rempli. Distinguer explicitement les deux cas.
+  const hasValue = value !== '';
   const current = parseDatetimeLocal(value);
 
   const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
@@ -98,7 +104,9 @@ export function DateTimePickerField({ label, value, onChange, error }: DateTimeP
         }}
         className="rounded border border-gray-300 px-3 py-2"
       >
-        <Text>{formatDatetimeLocal(current)}</Text>
+        <Text className={hasValue ? undefined : 'text-gray-400'}>
+          {hasValue ? formatDatetimeLocal(current) : 'Choisir une date et une heure'}
+        </Text>
       </Pressable>
       {error && <Text className="text-sm text-red-600">{error}</Text>}
       {visible && (

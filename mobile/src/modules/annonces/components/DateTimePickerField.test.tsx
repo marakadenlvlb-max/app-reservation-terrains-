@@ -21,6 +21,16 @@ describe('DateTimePickerField', () => {
     expect(screen.queryByTestId('mock-datetimepicker')).toBeNull();
   });
 
+  it("affiche un texte d'invite, pas l'heure actuelle, tant qu'aucune date n'a été choisie", async () => {
+    // Bug rapporté en test manuel iOS : `value=''` (champ jamais touché) faisait afficher l'heure
+    // du moment (repli interne de `parseDatetimeLocal` pour initialiser le sélecteur), ce qui
+    // ressemblait à une vraie sélection déjà faite — jusqu'à ce que la validation la rejette au
+    // clic sur "Ajouter le créneau" avec un message contredisant ce qui était pourtant affiché.
+    await render(<DateTimePickerField label="Début" value="" onChange={jest.fn()} />);
+
+    expect(screen.getByText('Choisir une date et une heure')).toBeTruthy();
+  });
+
   it('affiche une erreur de validation quand elle est fournie', async () => {
     await render(<DateTimePickerField label="Début" value="2026-09-01T18:00" onChange={jest.fn()} error="Date invalide" />);
 
